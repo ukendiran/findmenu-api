@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - v1 # test
-      - master # production
+      - main # production
 
 jobs:
   deploy-test:
@@ -49,7 +49,7 @@ jobs:
             changes.sql
 
   deploy-production:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     name: Deploy to Production Server
     steps:
