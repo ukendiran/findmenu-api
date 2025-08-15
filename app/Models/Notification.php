@@ -8,17 +8,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Notification extends Model
 {
     use SoftDeletes;
+
     public $timestamps = false;
+
     protected $table = 'notifications';
+
     protected $dates = ['deleted_at', 'created_at'];
 
     protected $fillable = [
         'message',
         'status',
         'created_at',
-        'businessId'
+        'businessId',
     ];
-     protected $hidden = [
+
+    protected $hidden = [
         'created_at',
         'updated_at',
         'deleted_at',

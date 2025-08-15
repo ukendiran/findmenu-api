@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Config;
+use App\Swagger\Components;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Swagger\Components;
 
 class ConfigController extends BaseController
 {
@@ -16,23 +16,27 @@ class ConfigController extends BaseController
      *     summary="Get list of config settings",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="businessId",
      *         in="query",
      *         required=false,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="status",
      *         in="query",
      *         required=false,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(response=200, description="Config list retrieved successfully"),
      *     @OA\Response(response=404, description="No data found")
      * )
      */
-
     public function index(Request $request)
     {
         $query = Config::query();
@@ -63,10 +67,13 @@ class ConfigController extends BaseController
      *     summary="Create a new config",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Config")
      *     ),
+     *
      *     @OA\Response(response=200, description="Config created successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
@@ -107,6 +114,7 @@ class ConfigController extends BaseController
 
         $data = Config::create($request->all());
         $data->refresh();
+
         return $this->sendResponse($data, 'Config created successfully');
     }
 
@@ -117,22 +125,24 @@ class ConfigController extends BaseController
      *     summary="Get a config by ID",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(response=200, description="Config retrieved successfully"),
      *     @OA\Response(response=404, description="Not Found")
      * )
      */
-
     public function show($id)
     {
         $data = Config::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Config not found', 404);
         }
 
@@ -146,8 +156,11 @@ class ConfigController extends BaseController
      *     summary="Update config by ID",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/Config")),
+     *
      *     @OA\Response(response=200, description="Config updated successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
@@ -155,7 +168,7 @@ class ConfigController extends BaseController
     public function update(Request $request, $id)
     {
         $data = Config::find($id);
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Config not found', 404);
         }
         // Validate the request data
@@ -192,6 +205,7 @@ class ConfigController extends BaseController
         }
 
         $data->update($request->all());
+
         return $this->sendResponse($data, 'Config updated successfully');
     }
 
@@ -202,7 +216,9 @@ class ConfigController extends BaseController
      *     summary="Delete config by ID",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Config deleted successfully"),
      *     @OA\Response(response=404, description="Not Found")
      * )
@@ -211,11 +227,12 @@ class ConfigController extends BaseController
     {
         $data = Config::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Config not found', 404);
         }
 
         $data->delete();
+
         return $this->sendResponse(null, 'Config deleted successfully');
     }
 
@@ -225,7 +242,9 @@ class ConfigController extends BaseController
      *     summary="Restore a deleted config",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Config restored successfully"),
      *     @OA\Response(response=404, description="Config not found in trash")
      * )
@@ -234,7 +253,7 @@ class ConfigController extends BaseController
     {
         $data = Config::onlyTrashed()->find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Config not found in trash', [], 404);
         }
 
@@ -249,6 +268,7 @@ class ConfigController extends BaseController
      *     summary="List all trashed configs",
      *     tags={"Config"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(response=200, description="Trashed config retrieved successfully"),
      *     @OA\Response(response=404, description="No trashed config found")
      * )

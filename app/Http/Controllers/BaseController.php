@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 /**
  * @OA\OpenApi(
+ *
  *     @OA\Info(
  *         version="1.0.0",
  *         title="FindMenu API",
  *         description="API documentation for FindMenu"
  *     ),
+ *
  *     @OA\Components(
+ *
  *         @OA\SecurityScheme(
  *             securityScheme="bearerAuth",
  *             type="http",
@@ -19,8 +22,6 @@ namespace App\Http\Controllers;
  *     )
  * )
  */
-
-
 
 use Illuminate\Routing\Controller as BaseLaravelController;
 
@@ -32,7 +33,7 @@ class BaseController extends BaseLaravelController
             'message' => $message,
             'success' => true,
             'error' => null,
-            'data' => $data
+            'data' => $data,
         ], $status);
     }
 
@@ -42,7 +43,7 @@ class BaseController extends BaseLaravelController
             'message' => $message,
             'success' => false,
             'error' => $error,
-            'data' => null
+            'data' => null,
         ], $status);
     }
 }

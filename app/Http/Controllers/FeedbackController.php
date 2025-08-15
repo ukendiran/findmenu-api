@@ -14,9 +14,11 @@ class FeedbackController extends BaseController
      *     summary="Get list of feedback",
      *     tags={"Feedback"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="businessId", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="message", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="status", in="query", required=false, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Feedback list retrieved successfully"),
      * )
      */
@@ -25,7 +27,7 @@ class FeedbackController extends BaseController
         $query = Feedback::query();
 
         if ($request->has('message')) {
-            $query->where('message', 'like', '%' . $request->input('message') . '%');
+            $query->where('message', 'like', '%'.$request->input('message').'%');
         }
 
         if ($request->has('businessId')) {
@@ -36,6 +38,7 @@ class FeedbackController extends BaseController
         }
 
         $data = $query->get();
+
         return $this->sendResponse($data, 'Feedback list retrieved successfully');
     }
 
@@ -44,10 +47,13 @@ class FeedbackController extends BaseController
      *     path="/feedbacks",
      *     summary="Create feedback",
      *     tags={"Feedback"},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Feedback")
      *     ),
+     *
      *     @OA\Response(response=200, description="Feedback created successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
@@ -57,10 +63,11 @@ class FeedbackController extends BaseController
         $data = $request->validate([
             'message' => 'required|string',
             'status' => 'nullable|integer',
-            'businessId' => 'nullable|integer'
+            'businessId' => 'nullable|integer',
         ]);
-        $data =  Feedback::create($data);
+        $data = Feedback::create($data);
         $data->refresh();
+
         return $this->sendResponse($data, 'Feedback created successfully');
     }
 
@@ -69,7 +76,9 @@ class FeedbackController extends BaseController
      *     path="/feedbacks/{id}",
      *     summary="Get feedback by ID",
      *     tags={"Feedback"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Feedback retrieved successfully"),
      *     @OA\Response(response=404, description="Feedback not found")
      * )
@@ -77,9 +86,10 @@ class FeedbackController extends BaseController
     public function show($id)
     {
         $data = Feedback::find($id);
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Feedback not found', 404);
         }
+
         return $this->sendResponse($data, 'Feedback retrieved successfully');
     }
 
@@ -88,11 +98,15 @@ class FeedbackController extends BaseController
      *     path="/feedbacks/{id}",
      *     summary="Update feedback by ID",
      *     tags={"Feedback"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Feedback")
      *     ),
+     *
      *     @OA\Response(response=200, description="Feedback updated successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
@@ -102,7 +116,7 @@ class FeedbackController extends BaseController
         $validator = Validator::make($request->all(), [
             'message' => 'sometimes|string',
             'status' => 'nullable|integer',
-            'businessId' => 'nullable|integer'
+            'businessId' => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
@@ -110,6 +124,7 @@ class FeedbackController extends BaseController
         }
 
         $data->update($request->all());
+
         return $this->sendResponse($data, 'Feedback updated successfully');
     }
 
@@ -118,7 +133,9 @@ class FeedbackController extends BaseController
      *     path="/feedbacks/{id}",
      *     summary="Delete feedback by ID",
      *     tags={"Feedback"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Feedback deleted successfully"),
      *     @OA\Response(response=404, description="Feedback not found")
      * )
@@ -127,11 +144,12 @@ class FeedbackController extends BaseController
     {
         $data = Feedback::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Feedback not found', 404);
         }
 
         $data->delete();
+
         return $this->sendResponse(null, 'Feedback deleted successfully');
     }
 
@@ -140,7 +158,9 @@ class FeedbackController extends BaseController
      *     path="/feedbacks/restore/{id}",
      *     summary="Restore a deleted feedback",
      *     tags={"Feedback"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Feedback restored successfully"),
      *     @OA\Response(response=404, description="Feedback not found in trash")
      * )
@@ -149,7 +169,7 @@ class FeedbackController extends BaseController
     {
         $data = Feedback::onlyTrashed()->find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Feedback not found in trash', [], 404);
         }
 
@@ -163,6 +183,7 @@ class FeedbackController extends BaseController
      *     path="/feedbacks/trashed",
      *     summary="List all trashed feedbacks",
      *     tags={"Feedback"},
+     *
      *     @OA\Response(response=200, description="Trashed feedback retrieved successfully"),
      *     @OA\Response(response=404, description="No trashed feedback found")
      * )

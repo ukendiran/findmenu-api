@@ -30,13 +30,14 @@ class ValidateUiRequest
                     return true;
                 }
             }
+
             return false;
         };
 
         // Check Referer or Origin header
-        if (!empty($referer) && $startsWithAllowedOrigin($referer)) {
+        if (! empty($referer) && $startsWithAllowedOrigin($referer)) {
             $isValidRequest = true;
-        } elseif (!empty($origin) && $startsWithAllowedOrigin($origin)) {
+        } elseif (! empty($origin) && $startsWithAllowedOrigin($origin)) {
             $isValidRequest = true;
         }
 
@@ -44,7 +45,7 @@ class ValidateUiRequest
         $isAjax = $request->header('X-Requested-With') === 'XMLHttpRequest';
         $expectsJson = $request->expectsJson();
 
-        if (!$isValidRequest && ($isAjax || $expectsJson)) {
+        if (! $isValidRequest && ($isAjax || $expectsJson)) {
             $isValidRequest = true;
         }
 
@@ -57,7 +58,7 @@ class ValidateUiRequest
         }
 
         // Final abort if invalid request
-        if (!$isValidRequest) {
+        if (! $isValidRequest) {
             abort(403, 'Direct API access not allowed');
         }
 

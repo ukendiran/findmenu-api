@@ -7,6 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="Feedback",
  *     type="object",
  *     required={"message"},
+ *
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="message", type="string", example="Great service!"),
  *     @OA\Property(property="status", type="integer", example=1),

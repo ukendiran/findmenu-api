@@ -1,0 +1,119 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Business;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+
+class PaymentController extends BaseController
+{
+    //
+
+    public function initiatePhonePe(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'planId' => 'required|exists:subscription_plans,id',
+            'businessId' => 'required|exists:businesses,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        $plan = SubscriptionPlan::findOrFail($request->planId);
+        $business = Business::findOrFail($request->businessId);
+
+        $amountPaise = $plan->price * 100;
+        $merchantId = env('PHONEPE_MERCHANT_ID');
+        $saltKey = env('PHONEPE_SALT_KEY');
+        $saltIndex = env('PHONEPE_SALT_INDEX');
+        $redirectUrl = env('PHONEPE_REDIRECT_URL');
+        $callbackUrl = env('PHONEPE_CALLBACK_URL');
+
+        $transactionId = uniqid('txn_');
+        $data = [
+            'merchantId' => $merchantId,
+            'merchantTransactionId' => $transactionId,
+            'merchantUserId' => "business_" . $business->id,
+            'amount' => $amountPaise,
+            'redirectUrl' => $redirectUrl,
+            'redirectMode' => 'REDIRECT',
+            'callbackUrl' => $callbackUrl,
+            'mobileNumber' => $business->mobile ?? null,
+            'paymentInstrument' => [
+                'type' => 'PAY_PAGE'
+            ],
+        ];
+
+        $jsonData = json_encode($data);
+        $base64 = base64_encode($jsonData);
+        $xVerify = hash('sha256', $base64 . "/pg/v1/pay" . $saltKey) . "###" . $saltIndex;
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'X-VERIFY' => $xVerify,
+        ])->post(env('PHONEPE_BASE_URL') . "/pg/v1/pay", [
+            'request' => $base64,
+        ]);
+
+        $resp = $response->json();
+        if ($resp['success'] && isset($resp['data']['instrumentResponse']['redirectInfo']['url'])) {
+            // Save initial subscription as pending
+            Subscription::create([
+                'businessId' => $business->id,
+                'planId' => $plan->id,
+                'payment_gateway' => 'phonepe',
+                'paymentId' => $transactionId,
+                'starts_at' => now(),
+                'ends_at' => now(),
+                'is_active' => false,
+            ]);
+
+            return response()->json([
+                'payment_url' => $resp['data']['instrumentResponse']['redirectInfo']['url'],
+                'transaction_id' => $transactionId
+            ]);
+        }
+
+        return response()->json(['error' => 'Payment initiation failed.'], 500);
+    }
+
+    public function phonePeCallback(Request $request)
+    {
+        $payload = json_decode($request->getContent(), true);
+        $transactionId = $payload['transactionId'] ?? null;
+
+        if (!$transactionId) {
+            return response()->json(['error' => 'Invalid callback'], 400);
+        }
+
+        $subscription = Subscription::where('paymentId', $transactionId)->first();
+        if (!$subscription) return response()->json(['error' => 'Subscription not found'], 404);
+
+        // Verify status again (optional)
+        $saltKey = env('PHONEPE_SALT_KEY');
+        $saltIndex = env('PHONEPE_SALT_INDEX');
+        $merchantId = env('PHONEPE_MERCHANT_ID');
+
+        $xVerify = hash('sha256', "/pg/v1/status/{$merchantId}/{$transactionId}" . $saltKey) . "###" . $saltIndex;
+
+        $statusResponse = Http::withHeaders([
+            'X-VERIFY' => $xVerify,
+        ])->get(env('PHONEPE_BASE_URL') . "/pg/v1/status/{$merchantId}/{$transactionId}");
+
+        $status = $statusResponse->json();
+        if (isset($status['data']['status']) && $status['data']['status'] === 'SUCCESS') {
+            $subscription->update([
+                'is_active' => true,
+                'starts_at' => now(),
+                'ends_at' => now()->addMonth(),
+            ]);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+}

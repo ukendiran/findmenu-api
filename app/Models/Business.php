@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Business extends Model
 {
     use SoftDeletes;
+
     protected $table = 'businesses';
+
     protected $fillable = [
         'name',
         'code',
@@ -31,6 +33,7 @@ class Business extends Model
         'currency',
         'is_featured',
     ];
+
     protected $hidden = [
         'created_at',
         'updated_at',
@@ -41,14 +44,40 @@ class Business extends Model
 
     protected $dates = ['deleted_at', 'created_at'];
 
-
     public function config()
     {
         return $this->hasOne(Config::class, 'businessId'); // or 'businessId' if you renamed it
     }
+
     public function category()
     {
         return $this->hasMany(MainCategory::class, 'businessId'); // or 'businessId' if you renamed it
     }
 
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function plan()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('is_active', true)
+            ->whereDate('ends_at', '>=', now());
+    }
+
+    public function payment()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

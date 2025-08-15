@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Swagger\Schemas;
+
 use OpenApi\Annotations as OA;
 
 /**
@@ -8,6 +9,7 @@ use OpenApi\Annotations as OA;
  *     schema="Config",
  *     type="object",
  *     required={"status", "businessId"},
+ *
  *     @OA\Property(property="json", type="string", format="json", nullable=true),
  *     @OA\Property(property="status", type="integer", example=1),
  *     @OA\Property(property="businessId", type="integer", example=1),

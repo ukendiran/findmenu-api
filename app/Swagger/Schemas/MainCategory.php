@@ -7,6 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="MainCategory",
  *     type="object",
  *     required={"name", "businessId"},
+ *
  *     @OA\Property(property="name", type="string", example="Masala Dosa"),
  *     @OA\Property(property="businessId", type="integer", example=1), *
  *     @OA\Property(property="image", type="string", nullable=true, example="image.jpg"),

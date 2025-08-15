@@ -21,7 +21,7 @@ class Image extends Model
         'mime_type',
         'size',
         'imageable_id',
-        'imageable_type'
+        'imageable_type',
     ];
 
     /**
@@ -37,6 +37,6 @@ class Image extends Model
      */
     public function getFullUrlAttribute()
     {
-        return asset('storage/' . $this->path);
+        return asset('storage/'.$this->path);
     }
 }

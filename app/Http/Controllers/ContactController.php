@@ -15,12 +15,14 @@ class ContactController extends BaseController
      *     summary="Get list of contacts",
      *     tags={"Contact"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="name", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="message", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="email", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="mobile", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="status", in="query", required=false, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="businessId", in="query", required=false, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Contact list retrieved successfully"),
      *     @OA\Response(response=404, description="No data found")
      * )
@@ -30,11 +32,11 @@ class ContactController extends BaseController
         $query = Contact::query();
 
         if ($request->has('name')) {
-            $query->where('name', 'like', '%' . $request->input('name') . '%');
+            $query->where('name', 'like', '%'.$request->input('name').'%');
         }
 
         if ($request->has('message')) {
-            $query->where('message', 'like', '%' . $request->input('message') . '%');
+            $query->where('message', 'like', '%'.$request->input('message').'%');
         }
 
         if ($request->has('email')) {
@@ -55,10 +57,10 @@ class ContactController extends BaseController
 
         $data = $query->get();
 
-
         if ($data->isEmpty()) {
             return $this->sendError('No data found', 'No contacts available', 404);
         }
+
         return $this->sendResponse($data, 'Contact list retrieved successfully');
     }
 
@@ -68,21 +70,23 @@ class ContactController extends BaseController
      *     path="/contact",
      *     summary="Create a new contact",
      *     tags={"Contact"},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(ref="#/components/schemas/Contact")
      *     ),
+     *
      *     @OA\Response(response=200, description="Contact created successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
      */
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'    => 'required|string|max:255',
-            'email'   => 'nullable|email',
-            'mobile'  => 'nullable|string|max:20',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             // Add other validation rules as needed
         ]);
@@ -93,6 +97,7 @@ class ContactController extends BaseController
 
         $data = Contact::create($request->all());
         $data->refresh();
+
         return $this->sendResponse($data, 'Contact created successfully');
     }
 
@@ -102,7 +107,9 @@ class ContactController extends BaseController
      *     path="/contact/{id}",
      *     summary="Get a contact by ID",
      *     tags={"Contact"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Contact retrieved successfully"),
      *     @OA\Response(response=404, description="Contact not found")
      * )
@@ -111,13 +118,12 @@ class ContactController extends BaseController
     {
         $data = Contact::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Contact not found', 404);
         }
 
         return $this->sendResponse($data, 'Contact retrieved successfully');
     }
-
 
     // PUT/PATCH /contact/{id}
     /**
@@ -125,17 +131,21 @@ class ContactController extends BaseController
      *     path="/contact/{id}",
      *     summary="Update contact by ID",
      *     tags={"Contact"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/Contact")),
+     *
      *     @OA\Response(response=200, description="Contact updated successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
-     */    public function update(Request $request, Contact $data)
+     */
+    public function update(Request $request, Contact $data)
     {
         $validator = Validator::make($request->all(), [
-            'name'    => 'sometimes|required|string|max:255',
-            'email'   => 'nullable|email',
-            'mobile'  => 'nullable|string|max:20',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'nullable|email',
+            'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             // Add other validation rules
         ]);
@@ -145,6 +155,7 @@ class ContactController extends BaseController
         }
 
         $data->update($request->all());
+
         return $this->sendResponse($data, 'Contact updated successfully');
     }
 
@@ -154,7 +165,9 @@ class ContactController extends BaseController
      *     path="/contact/{id}",
      *     summary="Delete contact by ID",
      *     tags={"Contact"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Contact deleted successfully"),
      *     @OA\Response(response=404, description="Contact not found")
      * )
@@ -163,11 +176,12 @@ class ContactController extends BaseController
     {
         $data = Contact::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Contact not found', 404);
         }
 
         $data->delete();
+
         return $this->sendResponse(null, 'Contact deleted successfully');
     }
 
@@ -176,7 +190,9 @@ class ContactController extends BaseController
      *     path="/contact/restore/{id}",
      *     summary="Restore a deleted contact",
      *     tags={"Contact"},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Contact restored successfully"),
      *     @OA\Response(response=404, description="Contact not found in trash")
      * )
@@ -185,7 +201,7 @@ class ContactController extends BaseController
     {
         $data = Contact::onlyTrashed()->find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Contact not found in trash', [], 404);
         }
 
@@ -199,6 +215,7 @@ class ContactController extends BaseController
      *     path="/contact/trashed",
      *     summary="List all trashed contacts",
      *     tags={"Contact"},
+     *
      *     @OA\Response(response=200, description="Trashed contacts retrieved successfully"),
      *     @OA\Response(response=404, description="No trashed contacts found")
      * )

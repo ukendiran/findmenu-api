@@ -7,6 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="Contact",
  *     type="object",
  *     required={"name"},
+ *
  *     @OA\Property(property="name", type="string", maxLength=255),
  *     @OA\Property(property="email", type="string", format="email", nullable=true),
  *     @OA\Property(property="mobile", type="string", maxLength=20, nullable=true),

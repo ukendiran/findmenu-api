@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Business;
 use App\Models\Config;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class BusinessController extends BaseController
@@ -16,16 +16,17 @@ class BusinessController extends BaseController
      *     path="/business",
      *     tags={"Business"},
      *     summary="Get list of business with optional filters",
+     *
      *     @OA\Parameter(name="email", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="mobile", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="code", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="type", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="status", in="query", required=false, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Business list retrieved successfully"),
      *     @OA\Response(response=404, description="No business available")
      * )
      */
-
     public function index(Request $request)
     {
         $query = Business::query();
@@ -62,12 +63,13 @@ class BusinessController extends BaseController
      *     path="/business",
      *     tags={"Business"},
      *     summary="Create new business with config and admin user",
+     *
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/Business")),
+     *
      *     @OA\Response(response=200, description="Business, config, and user created successfully"),
      *     @OA\Response(response=422, description="Validation error")
      * )
      */
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -97,17 +99,17 @@ class BusinessController extends BaseController
         $config = Config::create([
             'businessId' => $business->id,
             'json' => json_encode(['example' => 'config']),
-            'status' => 1
+            'status' => 1,
         ]);
 
         $config->refresh();
 
         // 3. Create Admin User for the Business
         $user = User::create([
-            'name'     => $business->name,
-            'email'    => $business->email,
-            'password' => Hash::make($business->name . "123"), // set a secure default or generate
-            'status'   => 1,
+            'name' => $business->name,
+            'email' => $business->email,
+            'password' => Hash::make($business->name.'123'), // set a secure default or generate
+            'status' => 1,
             'businessId' => $business->id,
         ]);
 
@@ -116,8 +118,8 @@ class BusinessController extends BaseController
 
         return $this->sendResponse([
             'business' => $business,
-            'config'   => $config,
-            'user'     => $user,
+            'config' => $config,
+            'user' => $user,
         ], 'Business, config, and user created successfully');
     }
 
@@ -126,17 +128,18 @@ class BusinessController extends BaseController
      *     path="/business/{id}",
      *     tags={"Business"},
      *     summary="Get business by ID",
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Business retrieved successfully"),
      *     @OA\Response(response=404, description="Business not found")
      * )
      */
-
     public function show($id)
     {
         $data = Business::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Business not found', 404);
         }
 
@@ -148,25 +151,27 @@ class BusinessController extends BaseController
      *     path="/business/{id}",
      *     tags={"Business"},
      *     summary="Update business by ID",
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/Business")),
+     *
      *     @OA\Response(response=200, description="Business updated successfully"),
      *     @OA\Response(response=422, description="Validation error"),
      *     @OA\Response(response=404, description="Business not found")
      * )
      */
-
     public function update(Request $request, $id)
     {
         $data = Business::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Business not found', 404);
         }
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:100',
-            'code' => 'sometimes|required|string|max:50|unique:businesses,code,' . $data->id,
+            'code' => 'sometimes|required|string|max:50|unique:businesses,code,'.$data->id,
             'email' => 'nullable|email',
             'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string',
@@ -189,9 +194,9 @@ class BusinessController extends BaseController
             $file = $request->file('image');
             $folderName = $request->code ?? 'uploads';
             $destinationPath = public_path("images/$folderName");
-            $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+            $fileName = uniqid().'.'.$file->getClientOriginalExtension();
 
-            if (!file_exists($destinationPath)) {
+            if (! file_exists($destinationPath)) {
                 mkdir($destinationPath, 0777, true);
             }
 
@@ -209,9 +214,9 @@ class BusinessController extends BaseController
             $file = $request->file('bannerImage');
             $folderName = $request->code ?? 'uploads';
             $destinationPath = public_path("images/$folderName");
-            $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+            $fileName = uniqid().'.'.$file->getClientOriginalExtension();
 
-            if (!file_exists($destinationPath)) {
+            if (! file_exists($destinationPath)) {
                 mkdir($destinationPath, 0777, true);
             }
 
@@ -225,7 +230,7 @@ class BusinessController extends BaseController
             $input['bannerImage'] = "images/$folderName/$fileName";
         }
 
-        if (!$data->update($input)) {
+        if (! $data->update($input)) {
             return $this->sendError('Update failed', 'Could not update business', 500);
         }
 
@@ -237,21 +242,23 @@ class BusinessController extends BaseController
      *     path="/business/{id}",
      *     tags={"Business"},
      *     summary="Delete (soft) business by ID",
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Business deleted successfully"),
      *     @OA\Response(response=404, description="Business not found")
      * )
      */
-
     public function destroy($id)
     {
         $data = Business::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'Business not found', 404);
         }
 
         $data->delete();
+
         return $this->sendResponse(null, 'Business deleted successfully');
     }
 
@@ -260,17 +267,18 @@ class BusinessController extends BaseController
      *     path="/business/{id}/restore",
      *     tags={"Business"},
      *     summary="Restore soft-deleted business",
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Business restored successfully"),
      *     @OA\Response(response=404, description="Business not found in trash")
      * )
      */
-
     public function restore($id)
     {
         $data = Business::onlyTrashed()->find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Business not found in trash', [], 404);
         }
 
@@ -284,11 +292,11 @@ class BusinessController extends BaseController
      *     path="/business/trashed",
      *     tags={"Business"},
      *     summary="Get all soft-deleted business",
+     *
      *     @OA\Response(response=200, description="Trashed business retrieved successfully"),
      *     @OA\Response(response=404, description="No trashed business found")
      * )
      */
-
     public function trashed()
     {
         $data = Business::onlyTrashed()->get();
@@ -306,18 +314,23 @@ class BusinessController extends BaseController
      *     summary="Get business details by code including main categories, subcategories and items",
      *     tags={"Business"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="code",
      *         in="path",
      *         description="Business unique code",
      *         required=true,
+     *
      *         @OA\Schema(type="string")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Business data fetched successfully",
+     *
      *         @OA\JsonContent(
      *             type="object",
+     *
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(
@@ -327,6 +340,7 @@ class BusinessController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Business not found"
@@ -337,12 +351,12 @@ class BusinessController extends BaseController
     {
         $data = Business::with([
             'category.subCategory.items',
-            'config'
+            'config',
         ])
             ->where('code', $code)
             ->first();
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Business not found', [], 404);
         }
 
@@ -363,12 +377,12 @@ class BusinessController extends BaseController
                     ->where('businessId', $businessId)
                     ->orderBy('menuOrderId');
             },
-            'config'
+            'config',
         ])
             ->where('businessId', $businessId)
             ->first();
 
-        if (!$business) {
+        if (! $business) {
             return $this->sendError('Business not found', [], 404);
         }
 
@@ -381,7 +395,7 @@ class BusinessController extends BaseController
 
         $data = Business::firstWhere('code', $code);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Business not found', [], 404);
         } else {
             if ($data->status) {
@@ -389,6 +403,7 @@ class BusinessController extends BaseController
             }
         }
     }
+
     public function getBusinessDetailsByCode(Request $request, $code)
     {
         // Load business with all necessary relations in one go
@@ -402,7 +417,7 @@ class BusinessController extends BaseController
             'category.subCategory.items' => function ($q) {
                 $q->where('status', 1)->orderBy('menuOrderId');
             },
-            'config'
+            'config',
         ])
             ->where('code', $code);
 
@@ -413,7 +428,7 @@ class BusinessController extends BaseController
 
         $data = $business->first();
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Business not found', [], 404);
         }
 
@@ -426,14 +441,18 @@ class BusinessController extends BaseController
      *     tags={"Business"},
      *     summary="Get unique business types from businesses table",
      *     description="Fetches distinct business type values from businesses table.",
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Unique business types retrieved successfully",
+     *
      *         @OA\JsonContent(
      *             type="array",
+     *
      *             @OA\Items(type="string", example="restaurant")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="No business types found"
@@ -443,7 +462,6 @@ class BusinessController extends BaseController
     public function getUniqueTypes()
     {
         $types = Business::whereNotNull('type')->distinct()->pluck('type');
-
 
         if ($types->isEmpty()) {
             return $this->sendError('No business types found', [], 404);

@@ -1,0 +1,10 @@
+includes:
+  - vendor/nunomaduro/larastan/extension.neon
+parameters:
+  paths:
+    - app
+  level: 6
+  bootstrapFiles:
+    - vendor/autoload.php
+  parallel:
+    maximumNumberOfProcesses: 4

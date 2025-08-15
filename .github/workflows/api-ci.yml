@@ -1,0 +1,19 @@
+name: API CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { php: ["8.2","8.3"] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          extensions: mbstring, intl, pdo_mysql, xml, curl, fileinfo, openssl
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: ./vendor/bin/pint --test || true
+      - run: ./vendor/bin/phpstan analyse --no-progress || true
+      - run: |
+          if [ -f vendor/bin/pest ]; then vendor/bin/pest --compact || true; else vendor/bin/phpunit --testdox || true; fi

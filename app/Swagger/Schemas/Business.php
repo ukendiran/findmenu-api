@@ -7,6 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="Business",
  *     type="object",
  *     required={"name", "code", "status", "email", "mobile"},
+ *
  *     @OA\Property(property="name", type="string", example="Cafe 24/7"),
  *     @OA\Property(property="code", type="string", example="cafe247"),
  *     @OA\Property(property="email", type="string", example="cafe@gmail.com"),

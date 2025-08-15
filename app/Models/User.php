@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -14,6 +14,7 @@ class User extends Authenticatable implements JWTSubject
     use SoftDeletes;
 
     public $timestamps = false;
+
     protected $dates = ['deleted_at', 'created_at'];
 
     protected $fillable = [
@@ -61,5 +62,15 @@ class User extends Authenticatable implements JWTSubject
     public function business()
     {
         return $this->belongsTo(Business::class, 'businessId');
+    }
+
+    public function payment()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

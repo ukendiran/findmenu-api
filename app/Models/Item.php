@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Item extends Model
 {
     use SoftDeletes;
+
     public $timestamps = false;
+
     protected $table = 'items';
+
     protected $dates = ['deleted_at', 'created_at'];
 
     protected $fillable = [
@@ -25,7 +28,7 @@ class Item extends Model
         'foodType',
         'createdAt',
         'createdBy',
-        'menuOrderId'
+        'menuOrderId',
     ];
 
     protected $hidden = [
@@ -48,6 +51,7 @@ class Item extends Model
     {
         return $this->belongsTo(SubCategory::class, 'subCategoryId');
     }
+
     public function images()
     {
         return $this->morphMany(Image::class, 'imageable');

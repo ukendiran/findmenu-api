@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SubCategory extends Model
 {
     use SoftDeletes;
+
     public $timestamps = false;
+
     protected $table = 'sub_categories';
+
     protected $dates = ['deleted_at', 'created_at'];
+
     protected $hidden = [
         'created_at',
         'updated_at',
@@ -26,7 +30,7 @@ class SubCategory extends Model
         'businessId',
         'categoryId',
         'isAvailable',
-        'menuOrderId'
+        'menuOrderId',
     ];
 
     public function business()

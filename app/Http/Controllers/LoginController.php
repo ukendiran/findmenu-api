@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class LoginController extends Controller
+class LoginController extends BaseController
 {
     public function showLoginForm()
     {
@@ -23,6 +23,7 @@ class LoginController extends Controller
         // Attempt login
         if (Auth::attempt($request->only('email', 'password'))) {
             $request->session()->regenerate();
+
             return redirect()->intended('/api/documentation');
         }
 
@@ -36,6 +37,7 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/api/login');
     }
 }

@@ -33,7 +33,7 @@ class AddMoreFieldsToUsersTable extends Migration
                 'profileImage',
                 'image',
                 'businessId',
-                'deleted_at'
+                'deleted_at',
             ]);
         });
     }

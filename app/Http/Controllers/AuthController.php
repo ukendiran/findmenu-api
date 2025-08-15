@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Business;
 use App\Models\Config;
+use App\Models\Subscription;
+use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Auth\Events\Registered;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends BaseController
 {
@@ -21,31 +22,36 @@ class AuthController extends BaseController
      *     summary="User login",
      *     description="Logs in a user and returns a token.",
      *     operationId="login",
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"email","password"},
+     *
      *             @OA\Property(property="email", type="string", format="email", example="user@example.com"),
      *             @OA\Property(property="password", type="string", format="password", example="password123")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Login successful",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="access_token", type="string"),
      *             @OA\Property(property="token_type", type="string", example="bearer"),
      *             @OA\Property(property="expires_in", type="integer", example=3600)
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Invalid credentials"
      *     )
      * )
      */
-
-
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
@@ -56,6 +62,11 @@ class AuthController extends BaseController
 
         $user = User::find(auth('api')->id());
         $config = Config::where('businessId', $user->businessId)->first();
+        $business = Business::find($user->businessId);
+        // Check active subscription (ends_at >= today)
+        $subscription = Subscription::where('businessId', $user->businessId)
+            ->where('ends_at', '>=', now())
+            ->first();
 
         return $this->sendResponse([
             'token' => $token,
@@ -63,7 +74,8 @@ class AuthController extends BaseController
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
             'user' => $user,
             'config' => $config,
-            'business' => Business::find($user->businessId),
+            'business' => $business,
+            'subscription' => $subscription,
         ], 'Login successful');
     }
 
@@ -72,10 +84,13 @@ class AuthController extends BaseController
      *     path="/register",
      *     tags={"Auth"},
      *     summary="Register a new user with business and config",
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"name", "email", "password", "password_confirmation", "code"},
+     *
      *             @OA\Property(property="name", type="string", example="John Doe"),
      *             @OA\Property(property="email", type="string", example="john@example.com"),
      *             @OA\Property(property="code", type="string", example="johns-biz"),
@@ -83,10 +98,13 @@ class AuthController extends BaseController
      *             @OA\Property(property="password_confirmation", type="string", example="secret123")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Registration successful",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(property="data", type="object",
@@ -96,17 +114,17 @@ class AuthController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation error")
      * )
      */
-
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users',
-            'code'    => 'required|string|unique:businesses',
-            'password' => 'required|string|min:6|confirmed'
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'code' => 'required|string|unique:businesses',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -115,9 +133,9 @@ class AuthController extends BaseController
 
         // Create Business
         $business = Business::create([
-            'name'  => $request->name,
+            'name' => $request->name,
             'email' => $request->email,
-            'code'  => $request->code,
+            'code' => $request->code,
             'status' => 1,
         ]);
 
@@ -125,15 +143,15 @@ class AuthController extends BaseController
         $config = Config::create([
             'businessId' => $business->id,
             'json' => json_encode(['init' => true]),
-            'status' => 1
+            'status' => 1,
         ]);
 
         // Create User
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
-            'status'   => 1,
+            'status' => 1,
             'businessId' => $business->id,
         ]);
 
@@ -141,9 +159,9 @@ class AuthController extends BaseController
         event(new Registered($user));
 
         return $this->sendResponse([
-            'user'     => $user,
+            'user' => $user,
             'business' => $business,
-            'config'   => $config,
+            'config' => $config,
         ], 'User registered successfully. Please check your email to verify your account.');
     }
 
@@ -153,10 +171,13 @@ class AuthController extends BaseController
      *     tags={"Auth"},
      *     summary="Logout the authenticated user",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Logged out successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Successfully logged out"),
      *             @OA\Property(property="data", type="string", nullable=true)
@@ -164,10 +185,10 @@ class AuthController extends BaseController
      *     )
      * )
      */
-
     public function logout()
     {
         auth('api')->logout();
+
         return $this->sendResponse(null, 'Successfully logged out');
     }
 
@@ -177,10 +198,13 @@ class AuthController extends BaseController
      *     tags={"Auth"},
      *     summary="Get profile of the logged-in user",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="User profile retrieved",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="User profile"),
      *             @OA\Property(property="data", type="object")
@@ -188,7 +212,6 @@ class AuthController extends BaseController
      *     )
      * )
      */
-
     public function me()
     {
         return $this->sendResponse(auth('api')->user(), 'User profile');
@@ -199,6 +222,7 @@ class AuthController extends BaseController
      *   path="/refresh",
      *   summary="Refresh JWT token",
      *   tags={"Auth"},
+     *
      *   @OA\Response(response=200, description="Token refreshed")
      * )
      */
@@ -212,7 +236,7 @@ class AuthController extends BaseController
             $expiresIn = JWTAuth::factory()->getTTL() * 60;
 
             return $this->sendResponse([
-                'token'      => $newToken,
+                'token' => $newToken,
                 'expires_in' => $expiresIn,
             ], 'Token refreshed');
         } catch (TokenInvalidException $e) {
@@ -225,29 +249,38 @@ class AuthController extends BaseController
      *     path="/business/{id}/password",
      *     tags={"Auth"},
      *     summary="Change business user password (admin only, no old password needed)",
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"new_password", "confirm_password"},
+     *
      *             @OA\Property(property="new_password", type="string", example="newpassword123"),
      *             @OA\Property(property="confirm_password", type="string", example="newpassword123")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Password updated successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(property="data", type="string", nullable=true)
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation failed"),
      *     @OA\Response(response=404, description="User not found")
      * )
@@ -255,7 +288,7 @@ class AuthController extends BaseController
     public function changePassword(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'new_password'     => 'required|string|min:6',
+            'new_password' => 'required|string|min:6',
             'confirm_password' => 'required|same:new_password',
         ]);
 
@@ -280,30 +313,39 @@ class AuthController extends BaseController
      *     path="/business/{id}/password",
      *     tags={"Auth"},
      *     summary="Change business user password (admin bypasses old password, others require it)",
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"new_password", "confirm_password"},
+     *
      *             @OA\Property(property="old_password", type="string", example="currentpass"),
      *             @OA\Property(property="new_password", type="string", example="newpassword123"),
      *             @OA\Property(property="confirm_password", type="string", example="newpassword123")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Password updated successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(property="data", type="string", nullable=true)
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation failed"),
      *     @OA\Response(response=404, description="User not found")
      * )
@@ -317,8 +359,8 @@ class AuthController extends BaseController
         }
 
         $rules = [
-            'old_password'     => 'required|string',
-            'new_password'     => 'required|string|min:6',
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|min:6',
             'confirm_password' => 'required|same:new_password',
         ];
 

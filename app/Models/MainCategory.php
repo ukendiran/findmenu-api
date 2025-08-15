@@ -4,6 +4,7 @@
  * @OA\Schema(
  *     title="MainCategory",
  *     description="Main Category model",
+ *
  *     @OA\Property(property="id", type="integer"),
  *     @OA\Property(property="name", type="string"),
  *     @OA\Property(property="image", type="string"),
@@ -23,8 +24,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class MainCategory extends Model
 {
     use SoftDeletes;
+
     public $timestamps = false;
+
     protected $table = 'main_categories';
+
     protected $dates = ['deleted_at', 'created_at'];
 
     protected $fillable = [
@@ -35,8 +39,9 @@ class MainCategory extends Model
         'created_at',
         'businessId',
         'isAvailable',
-        'menuOrderId'
+        'menuOrderId',
     ];
+
     protected $hidden = [
         'created_at',
         'updated_at',
@@ -47,6 +52,7 @@ class MainCategory extends Model
     {
         return $this->belongsTo(Business::class, 'businessId');
     }
+
     public function subCategory()
     {
         return $this->hasMany(SubCategory::class, 'categoryId');

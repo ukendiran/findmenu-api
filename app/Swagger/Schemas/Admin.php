@@ -7,6 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="Admin",
  *     type="object",
  *     required={"name","email", "password", "mobile"},
+ *
  *    @OA\Property(property="name", type="string"),
  *    @OA\Property(property="email", type="string"),
  *    @OA\Property(property="password", type="string"),

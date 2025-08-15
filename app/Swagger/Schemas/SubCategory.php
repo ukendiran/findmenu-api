@@ -7,6 +7,7 @@ namespace App\Swagger\Schemas;
  *     schema="SubCategory",
  *     type="object",
  *     required={"name", "businessId"},
+ *
  *     @OA\Property(property="name", type="string", example="Masala Dosa"),
  *     @OA\Property(property="businessId", type="integer", example=1),
  *     @OA\Property(property="categoryId", type="integer", example=2),

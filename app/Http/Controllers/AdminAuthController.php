@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Admin;
 use App\Models\Business;
 use App\Models\Config;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Auth\Events\Registered;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AdminAuthController extends BaseController
 {
@@ -19,18 +19,24 @@ class AdminAuthController extends BaseController
      *     path="/login",
      *     tags={"Auth"},
      *     summary="Login user and retrieve token",
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"email", "password"},
+     *
      *             @OA\Property(property="email", type="string", example="user@example.com"),
      *             @OA\Property(property="password", type="string", example="secret123")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Login successful",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(property="data", type="object",
@@ -41,10 +47,10 @@ class AdminAuthController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(response=401, description="Invalid credentials")
      * )
      */
-
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
@@ -71,10 +77,13 @@ class AdminAuthController extends BaseController
      *     path="/register",
      *     tags={"Auth"},
      *     summary="Register a new user with business and config",
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"name", "email", "password", "password_confirmation", "code"},
+     *
      *             @OA\Property(property="name", type="string", example="John Doe"),
      *             @OA\Property(property="email", type="string", example="john@example.com"),
      *             @OA\Property(property="code", type="string", example="johns-biz"),
@@ -82,10 +91,13 @@ class AdminAuthController extends BaseController
      *             @OA\Property(property="password_confirmation", type="string", example="secret123")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Registration successful",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(property="data", type="object",
@@ -95,17 +107,17 @@ class AdminAuthController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(response=422, description="Validation error")
      * )
      */
-
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users',
-            'code'    => 'required|string|unique:businesses',
-            'password' => 'required|string|min:6|confirmed'
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'code' => 'required|string|unique:businesses',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -114,9 +126,9 @@ class AdminAuthController extends BaseController
 
         // Create Business
         $business = Business::create([
-            'name'  => $request->name,
+            'name' => $request->name,
             'email' => $request->email,
-            'code'  => $request->code,
+            'code' => $request->code,
             'status' => 1,
         ]);
 
@@ -124,15 +136,15 @@ class AdminAuthController extends BaseController
         $config = Config::create([
             'businessId' => $business->id,
             'json' => json_encode(['init' => true]),
-            'status' => 1
+            'status' => 1,
         ]);
 
         // Create Admin
         $user = Admin::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
-            'status'   => 1,
+            'status' => 1,
             'businessId' => $business->id,
         ]);
 
@@ -140,9 +152,9 @@ class AdminAuthController extends BaseController
         event(new Registered($user));
 
         return $this->sendResponse([
-            'user'     => $user,
+            'user' => $user,
             'business' => $business,
-            'config'   => $config,
+            'config' => $config,
         ], 'Admin registered successfully. Please check your email to verify your account.');
     }
 
@@ -152,10 +164,13 @@ class AdminAuthController extends BaseController
      *     tags={"Auth"},
      *     summary="Logout the authenticated user",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Logged out successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Successfully logged out"),
      *             @OA\Property(property="data", type="string", nullable=true)
@@ -163,10 +178,10 @@ class AdminAuthController extends BaseController
      *     )
      * )
      */
-
     public function logout()
     {
         auth('api')->logout();
+
         return $this->sendResponse(null, 'Successfully logged out');
     }
 
@@ -176,10 +191,13 @@ class AdminAuthController extends BaseController
      *     tags={"Auth"},
      *     summary="Get profile of the logged-in user",
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Admin profile retrieved",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Admin profile"),
      *             @OA\Property(property="data", type="object")
@@ -187,7 +205,6 @@ class AdminAuthController extends BaseController
      *     )
      * )
      */
-
     public function me()
     {
         return $this->sendResponse(auth('api')->user(), 'Admin profile');
@@ -198,6 +215,7 @@ class AdminAuthController extends BaseController
      *   path="/refresh",
      *   summary="Refresh JWT token",
      *   tags={"Auth"},
+     *
      *   @OA\Response(response=200, description="Token refreshed")
      * )
      */
@@ -211,7 +229,7 @@ class AdminAuthController extends BaseController
             $expiresIn = JWTAuth::factory()->getTTL() * 60;
 
             return $this->sendResponse([
-                'token'      => $newToken,
+                'token' => $newToken,
                 'expires_in' => $expiresIn,
             ], 'Token refreshed');
         } catch (TokenInvalidException $e) {

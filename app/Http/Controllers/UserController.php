@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends BaseController
 {
@@ -15,12 +15,14 @@ class UserController extends BaseController
      *     summary="Get list of users",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(name="name", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="email", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="mobile", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="password", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="status", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="businessId", in="query", @OA\Schema(type="integer")),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="User list retrieved successfully"
@@ -31,14 +33,13 @@ class UserController extends BaseController
      *     )
      * )
      */
-
     public function index(Request $request)
     {
         $query = User::query();
 
         // Optional filters
         if ($request->has('name')) {
-            $query->where('name', 'like', '%' . $request->input('name') . '%');
+            $query->where('name', 'like', '%'.$request->input('name').'%');
         }
 
         if ($request->has('email')) {
@@ -69,15 +70,17 @@ class UserController extends BaseController
      *     summary="Create a new user",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(ref="#/components/schemas/User")
      *     ),
+     *
      *     @OA\Response(response=200, description="User created successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
      */
-
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -112,21 +115,24 @@ class UserController extends BaseController
      *     summary="Get user by ID",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id", in="path", required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(response=200, description="User retrieved successfully"),
      *     @OA\Response(response=404, description="User not found")
      * )
      */
-
     public function show($id)
     {
         $data = User::find($id);
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'User not found', 404);
         }
+
         return $this->sendResponse($data, 'User retrieved successfully');
     }
 
@@ -136,24 +142,28 @@ class UserController extends BaseController
      *     summary="Update an existing user",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id", in="path", required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(ref="#/components/schemas/User")
      *     ),
+     *
      *     @OA\Response(response=200, description="User updated successfully"),
      *     @OA\Response(response=422, description="Validation failed")
      * )
      */
-
     public function update(Request $request, User $user)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
+            'email' => 'sometimes|required|email|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:6',
             'mobile' => 'nullable|string|max:20',
             'phone' => 'nullable|string|max:20',
@@ -187,24 +197,27 @@ class UserController extends BaseController
      *     summary="Delete user",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id", in="path", required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(response=200, description="User deleted successfully"),
      *     @OA\Response(response=404, description="User not found")
      * )
      */
-
     public function destroy($id)
     {
         $data = User::find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('Not Found', 'User not found', 404);
         }
 
         $data->delete();
+
         return $this->sendResponse(null, 'User deleted successfully');
     }
 
@@ -214,20 +227,22 @@ class UserController extends BaseController
      *     summary="Restore a soft-deleted user",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Parameter(
      *         name="id", in="path", required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(response=200, description="User restored successfully"),
      *     @OA\Response(response=404, description="User not found in trash")
      * )
      */
-
     public function restore($id)
     {
         $data = User::onlyTrashed()->find($id);
 
-        if (!$data) {
+        if (! $data) {
             return $this->sendError('User not found in trash', [], 404);
         }
 
@@ -242,11 +257,11 @@ class UserController extends BaseController
      *     summary="Get all trashed (soft-deleted) users",
      *     tags={"Users"},
      *     security={{"bearerAuth":{}}},
+     *
      *     @OA\Response(response=200, description="Trashed users retrieved successfully"),
      *     @OA\Response(response=404, description="No trashed users found")
      * )
      */
-
     public function trashed()
     {
         $data = User::onlyTrashed()->get();

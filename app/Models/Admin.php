@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Admin extends Authenticatable implements JWTSubject
 {
@@ -14,6 +14,7 @@ class Admin extends Authenticatable implements JWTSubject
     use SoftDeletes;
 
     public $timestamps = false;
+
     protected $dates = ['deleted_at', 'created_at'];
 
     protected $fillable = [
@@ -47,6 +48,4 @@ class Admin extends Authenticatable implements JWTSubject
     {
         return [];
     }
-
-
 }
