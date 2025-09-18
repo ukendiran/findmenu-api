@@ -3,6 +3,8 @@
 use App\Http\Controllers\AdminAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+
 use App\Http\Controllers\{
     LoginController,
     AuthController,
@@ -16,10 +18,12 @@ use App\Http\Controllers\{
     SubCategoryController,
     UserController,
     DashboardController,
-    AdminController
+    AdminController,
+    SubscriptionController,
+    SubscriptionPlanController,
+    PaymentController,
+    PaymentStatusController
 };
-
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 Route::middleware(['validate.ui'])->group(function () {
 
@@ -78,12 +82,33 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/{notification}', [NotificationController::class, 'show']);
 
+
     Route::get('business', [BusinessController::class, 'index']);
     Route::get('business/{business}', [BusinessController::class, 'show']);
     Route::get('business/code/{business}', [BusinessController::class, 'getBusinessDetailsByCode']);
 
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{user}', [UserController::class, 'show']);
+
+
+    Route::get('subscriptions', [SubscriptionController::class, 'index']);
+    Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
+
+    Route::get('plans', [SubscriptionController::class, 'plans']);
+    Route::get('plans-renew', [SubscriptionController::class, 'plansRenew']);
+    Route::get('plans/{plan}', [SubscriptionController::class, 'show']);
+
+    Route::get('payment-history', [SubscriptionController::class, 'plans']);
+    Route::get('current-plan', [SubscriptionController::class, 'plans']);
+    Route::get('billing-info', [SubscriptionController::class, 'plans']);
+
+
+
+    Route::get('/plans-renew', [SubscriptionPlanController::class, 'getRenewalPlans']);
+    Route::post('/phonepe/initiate', [PaymentController::class, 'initiatePhonePePayment']);
+    Route::post('/payment-callback', [PaymentController::class, 'paymentCallback']);
+    Route::get('/payment-status/{businessId}', [PaymentStatusController::class, 'getPaymentStatus']);
+    Route::get('/payment-history/{businessId}', [PaymentStatusController::class, 'getPaymentHistory']);
 
     // ------------------------
     // Private Routes (POST, PUT, DELETE) Require Auth
@@ -165,6 +190,14 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::delete('admins/{user}', [AdminController::class, 'destroy']);
         Route::post('admins/{id}/restore', [AdminController::class, 'restore']);
         Route::get('admins/trashed', [AdminController::class, 'trashed']);
+
+
+        Route::post('subscriptions', [NotificationController::class, 'store']);
+        Route::put('subscriptions/{notification}', [NotificationController::class, 'update']);
+        Route::patch('subscriptions/{notification}', [NotificationController::class, 'update']);
+        Route::delete('subscriptions/{notification}', [NotificationController::class, 'destroy']);
+        Route::post('subscriptions/{id}/restore', [NotificationController::class, 'restore']);
+        Route::get('subscriptions/trashed', [NotificationController::class, 'trashed']);
     });
 });
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Business;
 use App\Models\Config;
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -56,6 +57,15 @@ class AuthController extends BaseController
 
         $user = User::find(auth('api')->id());
         $config = Config::where('businessId', $user->businessId)->first();
+        $business = Business::find($user->businessId);
+
+        // Check subscription with proper conditions
+        $subscription = Subscription::where('businessId', $user->businessId)
+            // ->where('status', 'active') // Only active subscriptions
+            ->where('ends_at', '>=', now()) // Not expired
+            ->first();
+
+        $hasActiveSubscription = !is_null($subscription);
 
         return $this->sendResponse([
             'token' => $token,
@@ -63,7 +73,9 @@ class AuthController extends BaseController
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
             'user' => $user,
             'config' => $config,
-            'business' => Business::find($user->businessId),
+            'business' => $business,
+            'subscription' => $subscription,
+            'has_active_subscription' => $hasActiveSubscription,
         ], 'Login successful');
     }
 
