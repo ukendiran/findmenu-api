@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Business;
 use App\Models\Config;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class BusinessController extends BaseController
             $query->where('mobile', $request->input('mobile'));
         }
         if ($request->has('code')) {
-            $query->where('code', $request->input('code'));
+            $query->whereRaw('LOWER(code) = ?', [strtolower($request->input('code'))]);
         }
         if ($request->has('type')) {
             $query->where('type', $request->input('type'));
@@ -339,7 +340,7 @@ class BusinessController extends BaseController
             'category.subCategory.items',
             'config'
         ])
-            ->where('code', $code)
+            ->whereRaw('LOWER(code) = ?', [strtolower($code)])
             ->first();
 
         if (!$data) {
@@ -379,7 +380,7 @@ class BusinessController extends BaseController
     {
         // Load business with all necessary relations in one go
 
-        $data = Business::firstWhere('code', $code);
+        $data = Business::whereRaw('LOWER(code) = ?', [strtolower($code)])->first();
 
         if (!$data) {
             return $this->sendError('Business not found', [], 404);
@@ -404,7 +405,7 @@ class BusinessController extends BaseController
             },
             'config'
         ])
-            ->where('code', $code);
+            ->whereRaw('LOWER(code) = ?', [strtolower($code)]);
 
         // Optional: filter by status if requested
         if ($request->has('status')) {
@@ -416,6 +417,17 @@ class BusinessController extends BaseController
         if (!$data) {
             return $this->sendError('Business not found', [], 404);
         }
+
+        $subscription = Subscription::where('businessId', $data->id)
+            // ->where('status', 'active') // Only active subscriptions
+            ->where('ends_at', '>=', now()) // Not expired
+            ->first();
+
+        $hasActiveSubscription = !is_null($subscription);
+
+        $data['subscription'] = $subscription;
+        $data['isSubscribed'] = $hasActiveSubscription;
+
 
         return $this->sendResponse($data, 'Business details fetched successfully');
     }
