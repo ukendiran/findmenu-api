@@ -94,6 +94,8 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('subscriptions', [SubscriptionController::class, 'index']);
     Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
 
+    Route::get('subscription-plans', [SubscriptionPlanController::class, 'index']);
+
     Route::get('plans', [SubscriptionController::class, 'plans']);
     Route::get('plans-renew', [SubscriptionController::class, 'plansRenew']);
     Route::get('plans/{plan}', [SubscriptionController::class, 'show']);
@@ -192,12 +194,21 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::get('admins/trashed', [AdminController::class, 'trashed']);
 
 
+
         Route::post('subscriptions', [NotificationController::class, 'store']);
         Route::put('subscriptions/{notification}', [NotificationController::class, 'update']);
         Route::patch('subscriptions/{notification}', [NotificationController::class, 'update']);
         Route::delete('subscriptions/{notification}', [NotificationController::class, 'destroy']);
         Route::post('subscriptions/{id}/restore', [NotificationController::class, 'restore']);
         Route::get('subscriptions/trashed', [NotificationController::class, 'trashed']);
+
+
+        Route::post('subscription-plans', [SubscriptionPlanController::class, 'store']);
+        Route::put('subscription-plans/{subscription}', [SubscriptionPlanController::class, 'update']);
+        Route::patch('subscription-plans/{subscription}', [SubscriptionPlanController::class, 'update']);
+        Route::delete('subscription-plans/{subscription}', [SubscriptionPlanController::class, 'destroy']);
+        Route::post('subscription-plans/{id}/restore', [SubscriptionPlanController::class, 'restore']);
+        Route::get('subscription-plans/trashed', [SubscriptionPlanController::class, 'trashed']);
     });
 });
 

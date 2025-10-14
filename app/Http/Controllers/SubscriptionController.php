@@ -28,6 +28,10 @@ class SubscriptionController extends BaseController
 
         $query->with('plan');
 
+        if ($request->has('businessId')) {
+            $query->where('businessId', $request->input('businessId'));
+        }
+
         if ($request->has('message')) {
             $query->where('message', 'like', '%' . $request->input('message') . '%');
         }
@@ -82,8 +86,8 @@ class SubscriptionController extends BaseController
         //     $query->where('slug', 'like', '%' . $request->input('message') . '%');
         // }
 
-        
-            $query->where('slug', '!=', 'trial');
+
+        $query->where('slug', '!=', 'trial');
 
 
         if ($request->has('status')) {
@@ -144,7 +148,10 @@ class SubscriptionController extends BaseController
      */
     public function show($id)
     {
-        $data = Subscription::find($id);
+        $query = Subscription::query();
+        $query->with('plan');
+        $data = $query->find($id);
+
         if (!$data) {
             return $this->sendError('Not Found', 'Subscription not found', 404);
         }

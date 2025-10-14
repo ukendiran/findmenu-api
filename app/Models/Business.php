@@ -30,6 +30,7 @@ class Business extends Model
         'review_url',
         'currency',
         'is_featured',
+        'lic_no',
     ];
     protected $hidden = [
         'created_at',

@@ -83,6 +83,8 @@ class BusinessController extends BaseController
             'status' => 'nullable|integer',
             'description' => 'nullable|string',
             'currency' => 'nullable|string|max:20',
+            'is_featured' => 'nullable|integer',
+            'lic_no' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -178,6 +180,8 @@ class BusinessController extends BaseController
             'type' => 'nullable|string',
             'description' => 'nullable|string',
             'currency' => 'nullable|string|max:20',
+            'is_featured' => 'nullable|integer',
+            'lic_no' => 'nullable|string',
         ]);
 
         $input = $request->except('image'); // Get all except image

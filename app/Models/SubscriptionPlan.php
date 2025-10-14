@@ -16,15 +16,22 @@ class SubscriptionPlan extends Model
         'name',
         'slug',
         'price',
-        'payment_gateway',
         'billing_period',
         'features',
         'status',
+        'is_renewable',
         'created_at',
+    ];
+
+    protected $casts = [
+        'price' => 'float',
+        'billing_period' => 'integer',
+        'status' => 'integer',
+        'is_renewable' => 'integer',
     ];
     protected $hidden = [
         'created_at',
         'updated_at',
         'deleted_at',
-    ];    
+    ];
 }
