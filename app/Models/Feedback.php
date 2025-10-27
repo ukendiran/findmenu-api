@@ -15,7 +15,7 @@ class Feedback extends Model
     protected $fillable = [
         'message',
         'status',
-        'createdAt',
+        'created_at',
         'businessId'
     ];
      protected $hidden = [
