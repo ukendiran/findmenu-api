@@ -64,8 +64,8 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      - name: Generate Swagger Docs
-        run: php artisan l5-swagger:generate
+      # - name: Generate Swagger Docs
+      #   run: php artisan l5-swagger:generate
 
       - name: Set Permissions
         run: chmod -R 775 storage bootstrap/cache
