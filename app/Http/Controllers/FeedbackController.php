@@ -35,6 +35,8 @@ class FeedbackController extends BaseController
             $query->where('status', $request->input('status'));
         }
 
+        $query->orderBy('created_at', 'desc');
+
         $data = $query->get();
         return $this->sendResponse($data, 'Feedback list retrieved successfully');
     }
