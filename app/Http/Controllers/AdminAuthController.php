@@ -62,7 +62,7 @@ class AdminAuthController extends BaseController
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
             'user' => $user,
             'config' => $config,
-            'business' => Business::find($user->businessId),
+            'business' => Business::with('group')->find($user->businessId),
         ], 'Login successful');
     }
 
