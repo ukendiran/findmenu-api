@@ -54,7 +54,7 @@ class BusinessController extends BaseController
             $query->where('status', $request->input('status'));
         }
 
-        $data = $query->get();
+        $data = $query->with('group')->get();
 
         if ($data->isEmpty()) {
             return $this->sendError('No data found', 'No business available', 404);
