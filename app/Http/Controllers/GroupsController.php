@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Validation\Rule;
 
 class GroupsController extends BaseController
 {
@@ -91,6 +91,12 @@ class GroupsController extends BaseController
                 'required',
                 'string',
                 'max:100',
+            ],
+            'code' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:businesses', // 👈 Add this line
             ],
             'description' => 'nullable|string',
             'image'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -186,7 +192,13 @@ class GroupsController extends BaseController
                 'string',
                 'max:100',
             ],
-
+            'code' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('groups')->ignore($id),
+            ],
             'description'   => 'nullable|string',
             'image'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             'status'        => 'nullable|integer',
