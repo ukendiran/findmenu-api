@@ -16,7 +16,8 @@ use App\Http\Controllers\{
     SubCategoryController,
     UserController,
     DashboardController,
-    AdminController
+    AdminController,
+    GroupsController
 };
 
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -58,6 +59,10 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('config', [ConfigController::class, 'index']);
     Route::get('config/{config}', [ConfigController::class, 'show']);
 
+    Route::get('groups', [GroupsController::class, 'index']);
+    Route::get('groups/{group}', [GroupsController::class, 'show']);
+    Route::get('group/{code}', [GroupsController::class, 'code']);
+
     Route::get('contacts', [ContactController::class, 'index']);
     Route::get('contacts/{contact}', [ContactController::class, 'show']);
 
@@ -94,11 +99,21 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::post('/business/{id}/password', [AuthController::class, 'changePassword']);
         Route::post('/business/password/{id}', [AuthController::class, 'changeUserPassword']);
 
+        // Group resource except GET
+        Route::post('groups', [GroupsController::class, 'store']);
+        Route::put('groups/{group}', [GroupsController::class, 'update']);
+        Route::patch('groups/{group}', [GroupsController::class, 'update']);
+        Route::delete('groups/{group}', [GroupsController::class, 'destroy']);
+
+
         // Config resource except GET
         Route::post('config', [ConfigController::class, 'store']);
         Route::put('config/{config}', [ConfigController::class, 'update']);
         Route::patch('config/{config}', [ConfigController::class, 'update']);
         Route::delete('config/{config}', [ConfigController::class, 'destroy']);
+
+
+
 
         // Repeat for other resources...
         Route::put('contacts/{contact}', [ContactController::class, 'update']);

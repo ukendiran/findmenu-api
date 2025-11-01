@@ -37,9 +37,15 @@ class BusinessController extends BaseController
         if ($request->has('mobile')) {
             $query->where('mobile', $request->input('mobile'));
         }
+
         if ($request->has('code')) {
             $query->where('code', $request->input('code'));
         }
+
+        if ($request->has('group_id')) {
+            $query->where('group_id', $request->input('group_id'));
+        }
+
         if ($request->has('type')) {
             $query->where('type', $request->input('type'));
         }
@@ -80,6 +86,7 @@ class BusinessController extends BaseController
             'bannerImage' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             'type' => 'nullable|string',
             'status' => 'nullable|integer',
+            'group_id' => 'nullable|integer',
             'description' => 'nullable|string',
             'currency' => 'nullable|string|max:20',
         ]);
@@ -134,7 +141,8 @@ class BusinessController extends BaseController
 
     public function show($id)
     {
-        $data = Business::find($id);
+        // $data = Business::find($id);
+        $data = Business::with('group')->find($id);
 
         if (!$data) {
             return $this->sendError('Not Found', 'Business not found', 404);
@@ -174,6 +182,7 @@ class BusinessController extends BaseController
             'image' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             'bannerImage' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             'status' => 'nullable|integer',
+            'group_id' => 'nullable|integer',
             'type' => 'nullable|string',
             'description' => 'nullable|string',
             'currency' => 'nullable|string|max:20',
