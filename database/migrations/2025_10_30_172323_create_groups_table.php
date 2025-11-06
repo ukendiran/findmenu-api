@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('groups', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100);
+            $table->string('code', 100);
+            $table->integer('status')->default(1);
+            $table->text('image')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();

@@ -23,7 +23,7 @@ return new class extends Migration
             $table->integer('status')->default(1);
             $table->string('profileImage')->nullable();
             $table->string('image')->nullable();
-            $table->foreign('businessId')->references('id')->on('businesses')->onDelete('cascade');
+            $table->unsignedBigInteger('businessId')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
