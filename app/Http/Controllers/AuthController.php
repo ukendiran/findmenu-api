@@ -302,7 +302,7 @@ class AuthController extends BaseController
      *             @OA\Property(property="success", type="boolean"),
      *             @OA\Property(property="message", type="string"),
      *             @OA\Property(property="data", type="string", nullable=true)
-     *         )
+         )
      *     ),
      *     @OA\Response(response=422, description="Validation failed"),
      *     @OA\Response(response=404, description="User not found")
@@ -337,5 +337,79 @@ class AuthController extends BaseController
         $user->save();
 
         return $this->sendResponse(null, 'Password updated successfully');
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/user/theme",
+     *     tags={"Auth"},
+     *     summary="Update user theme preference",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"theme"},
+     *             @OA\Property(property="theme", type="string", enum={"blue", "green", "purple", "orange", "red"}, example="green")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Theme updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="theme_preference", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation failed")
+     * )
+     */
+    public function updateTheme(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'theme' => 'required|string|in:blue,green,purple,orange,red',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Validation failed', $validator->errors(), 422);
+        }
+
+        $user = User::find(auth('api')->id());
+        $user->theme_preference = $request->theme;
+        $user->save();
+
+        return $this->sendResponse([
+            'theme_preference' => $user->theme_preference
+        ], 'Theme updated successfully');
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/user/theme",
+     *     tags={"Auth"},
+     *     summary="Get user theme preference",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Theme retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="theme_preference", type="string")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function getTheme()
+    {
+        $user = User::find(auth('api')->id());
+        
+        return $this->sendResponse([
+            'theme_preference' => $user->theme_preference ?? 'green'
+        ], 'Theme retrieved successfully');
     }
 }

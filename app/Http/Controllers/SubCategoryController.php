@@ -264,10 +264,10 @@ class SubCategoryController extends BaseController
             ],
             'description'   => 'nullable|string',
             'image'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'status'        => 'nullable|integer|in:0,1',
+            'status'        => 'nullable|integer|in:1,2',
             'businessId'    => 'sometimes|required|integer|exists:businesses,id',
             'categoryId'    => 'sometimes|required|integer|exists:main_categories,id',
-            'isAvailable'   => 'nullable|integer|in:0,1',
+            'isAvailable'   => 'nullable|integer|in:1,2',
             'menuOrderId'   => 'nullable|integer',
         ]);
 

@@ -22,8 +22,10 @@ class CreateBusinessesTable extends Migration
             $table->text('address')->nullable();
             $table->string('logo', 100)->nullable();
             $table->string('image', 100)->nullable();
+            $table->string('businessType', 100)->nullable();
             $table->text('bannerImage')->nullable();
             $table->integer('status')->default(1);
+            $table->integer('group_id')->default(1);
             $table->json('social')->nullable();
             $table->text('description')->nullable();
             $table->integer('reviewId')->nullable();
@@ -31,6 +33,7 @@ class CreateBusinessesTable extends Migration
             $table->integer('reviews')->default(0);
             $table->text('map_url')->nullable();
             $table->string('review_url', 255)->nullable();
+            $table->string('license_no', 255)->nullable();
             $table->string('currency', 20)->default('rupee');
             $table->timestamps();
             $table->softDeletes();

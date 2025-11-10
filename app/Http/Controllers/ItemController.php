@@ -72,6 +72,15 @@ class ItemController extends BaseController
     {
         $query = Item::query();
 
+        // If user is authenticated, filter by their businessId
+        if (auth('api')->check()) {
+            $user = auth('api')->user();
+            $query->where('businessId', $user->businessId);
+        } elseif ($request->has('businessId')) {
+            // For public access, allow filtering by businessId parameter
+            $query->where('businessId', $request->input('businessId'));
+        }
+
         // Optional filters
         if ($request->has('name')) {
             $query->where('name', 'like', '%' . $request->input('name') . '%');
@@ -81,15 +90,11 @@ class ItemController extends BaseController
             $query->where('categoryId', $request->input('categoryId'));
         }
 
-        if ($request->has('businessId')) {
-            $query->where('businessId', $request->input('businessId'));
-        }
-
         if ($request->has('status')) {
             $query->where('status', $request->input('status'));
         }
 
-        $data = $query->orderBy('menuOrderId')->get();
+        $data = $query->with(['category', 'subCategory'])->orderBy('menuOrderId')->get();
 
         if ($data->isEmpty()) {
             return $this->sendError('No data found', 'No Items available', 404);
