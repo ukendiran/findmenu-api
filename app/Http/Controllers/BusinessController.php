@@ -504,12 +504,18 @@ class BusinessController extends BaseController
 
         $businesses = Business::where('is_featured', 1)
             ->whereNotNull('image')
-            ->select('id', 'name', 'code', 'image', 'type')
+            ->select('id', 'name', 'code', 'image', 'logo', 'bannerImage', 'type')
             ->limit($limit)
             ->get()
             ->map(function ($item) use ($apiUrl) {
-                $item->logo_url = $item->logo
+                $item->logo_img_url = $item->logo
                     ? $apiUrl  . $item->logo
+                    : null;
+                $item->banner_img_url = $item->bannerImage
+                    ? $apiUrl  . $item->bannerImage
+                    : null;
+                $item->image_url = $item->image
+                    ? $apiUrl  . $item->image
                     : null;
                 return $item;
             });
