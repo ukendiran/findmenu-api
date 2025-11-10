@@ -30,31 +30,31 @@ class BusinessController extends BaseController
     {
         $query = Business::query();
 
-        // Optional filters
-        if ($request->has('email')) {
-            $query->where('email', $request->input('email'));
-        }
-        if ($request->has('mobile')) {
-            $query->where('mobile', $request->input('mobile'));
-        }
+        // Apply optional filters using when()
+        $query->when($request->email, fn($q) => $q->where('email', $request->email))
+            ->when($request->mobile, fn($q) => $q->where('mobile', $request->mobile))
+            ->when($request->code, fn($q) => $q->where('code', $request->code))
+            ->when($request->group_id, fn($q) => $q->where('group_id', $request->group_id))
+            ->when($request->type, fn($q) => $q->where('type', $request->type))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->is_featured, fn($q) => $q->where('is_featured', $request->is_featured));
 
-        if ($request->has('code')) {
-            $query->where('code', $request->input('code'));
-        }
+        // $apiUrl = env('API_URL');
+        $apiUrl = 'https://api.findmenu.in/';
 
-        if ($request->has('group_id')) {
-            $query->where('group_id', $request->input('group_id'));
-        }
+        $data = $query->with('group')->get()->map(function ($item) use ($apiUrl) {
+            $item->logo_img_url = $item->logo
+                ? $apiUrl  . $item->logo
+                : 'https://via.placeholder.com/200x200?text=No+Image';
+            $item->banner_img_url = $item->bannerImage
+                ? $apiUrl  . $item->bannerImage
+                : 'https://api.findmenu.in/images/no-image.png';
+            $item->img_url = $item->image
+                ? $apiUrl  . $item->image
+                : 'https://api.findmenu.in/images/no-image.png';
 
-        if ($request->has('type')) {
-            $query->where('type', $request->input('type'));
-        }
-
-        if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        $data = $query->with('group')->get();
+            return $item;
+        });
 
         if ($data->isEmpty()) {
             return $this->sendError('No data found', 'No business available', 404);
@@ -62,6 +62,7 @@ class BusinessController extends BaseController
 
         return $this->sendResponse($data, 'Business list retrieved successfully');
     }
+
 
     /**
      * @OA\Post(
@@ -459,5 +460,64 @@ class BusinessController extends BaseController
         }
 
         return $this->sendResponse($types, 'Unique business types retrieved successfully');
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/business/leading",
+     *     tags={"Business"},
+     *     summary="Get leading/featured businesses with logo images",
+     *     description="Fetches featured businesses with their logo images for display on homepage.",
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Number of businesses to return (default: 10)",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=10)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Leading businesses retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="name", type="string", example="John's Cafe"),
+     *                 @OA\Property(property="code", type="string", example="johns-cafe"),
+     *                 @OA\Property(property="logo", type="string", example="images/johns-cafe/logo.png"),
+     *                 @OA\Property(property="logo_url", type="string", example="https://api.findmenu.in/storage/images/johns-cafe/logo.png"),
+     *                 @OA\Property(property="type", type="string", example="restaurant")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="No leading businesses found"
+     *     )
+     * )
+     */
+    public function getLeadingBusinesses(Request $request)
+    {
+        $limit = $request->input('limit', 10);
+        $apiUrl = env('API_URL', 'https://api.findmenu.in');
+
+        $businesses = Business::where('is_featured', 1)
+            ->whereNotNull('image')
+            ->select('id', 'name', 'code', 'image', 'type')
+            ->limit($limit)
+            ->get()
+            ->map(function ($item) use ($apiUrl) {
+                $item->logo_url = $item->logo
+                    ? $apiUrl  . $item->logo
+                    : null;
+                return $item;
+            });
+
+        if ($businesses->isEmpty()) {
+            return $this->sendError('No leading businesses found', [], 404);
+        }
+
+        return $this->sendResponse($businesses, 'Leading businesses retrieved successfully');
     }
 }

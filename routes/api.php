@@ -84,8 +84,10 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('notifications/{notification}', [NotificationController::class, 'show']);
 
     Route::get('business', [BusinessController::class, 'index']);
-    Route::get('business/{business}', [BusinessController::class, 'show']);
+    Route::get('business/leading', [BusinessController::class, 'getLeadingBusinesses']);
+    Route::get('business/types', [BusinessController::class, 'getUniqueTypes']);
     Route::get('business/code/{business}', [BusinessController::class, 'getBusinessDetailsByCode']);
+    Route::get('business/{business}', [BusinessController::class, 'show']);
 
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{user}', [UserController::class, 'show']);
@@ -165,7 +167,6 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::delete('business/{business}', [BusinessController::class, 'destroy']);
         Route::post('business/{id}/restore', [BusinessController::class, 'restore']);
         Route::get('business/trashed', [BusinessController::class, 'trashed']);
-        Route::get('business/types', [BusinessController::class, 'getUniqueTypes']);
 
         Route::post('users', [UserController::class, 'store']);
         Route::put('users/{user}', [UserController::class, 'update']);
@@ -193,6 +194,32 @@ Route::middleware('web')->group(function () {
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 })->name('health');
+
+Route::get('/seed-featured', function () {
+    $businesses = \App\Models\Business::limit(6)->get();
+
+    $logos = [
+        'mcdonalds.png',
+        'starbucks.png',
+        'subway.png',
+        'kfc.png',
+        'pizzahut.png',
+        'dominos.png',
+    ];
+
+    foreach ($businesses as $index => $business) {
+        $business->update([
+            'status' => 1,
+            'is_featured' => 1,
+            'logo' => $logos[$index] ?? 'logo.png',
+        ]);
+    }
+
+    return response()->json([
+        'message' => 'Updated ' . $businesses->count() . ' businesses to featured',
+        'businesses' => $businesses
+    ]);
+});
 
 Route::fallback(function () {
     return response()->json(['message' => 'Not Found'], 404);
