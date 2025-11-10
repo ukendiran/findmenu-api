@@ -100,6 +100,10 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::get('/profile', [AuthController::class, 'me']);
         Route::post('/business/{id}/password', [AuthController::class, 'changePassword']);
         Route::post('/business/password/{id}', [AuthController::class, 'changeUserPassword']);
+        
+        // Theme management
+        Route::post('/user/theme', [AuthController::class, 'updateTheme']);
+        Route::get('/user/theme', [AuthController::class, 'getTheme']);
 
         // Group resource except GET
         Route::post('groups', [GroupsController::class, 'store']);

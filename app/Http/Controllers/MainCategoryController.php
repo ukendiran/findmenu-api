@@ -57,6 +57,15 @@ class MainCategoryController extends BaseController
     {
         $query = MainCategory::query();
 
+        // If user is authenticated, filter by their businessId
+        if (auth('api')->check()) {
+            $user = auth('api')->user();
+            $query->where('businessId', $user->businessId);
+        } elseif ($request->has('businessId')) {
+            // For public access, allow filtering by businessId parameter
+            $query->where('businessId', $request->input('businessId'));
+        }
+
         // Optional filters
         if ($request->has('name')) {
             $query->where('name', 'like', '%' . $request->input('name') . '%');
@@ -64,10 +73,6 @@ class MainCategoryController extends BaseController
 
         if ($request->has('categoryId')) {
             $query->where('categoryId', $request->input('categoryId'));
-        }
-
-        if ($request->has('businessId')) {
-            $query->where('businessId', $request->input('businessId'));
         }
 
         if ($request->has('status')) {
