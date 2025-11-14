@@ -3,12 +3,14 @@ name: Deploy Laravel API (Test & Production)
 on:
   push:
     branches:
-      - v1 # test
+      - test # test
       - main # production
 
 jobs:
-  deploy-test:
-    if: github.ref == 'refs/heads/v1'
+
+
+  deploy-test
+    if: github.ref == 'refs/heads/test
     runs-on: ubuntu-latest
     name: Deploy to Test Server
     steps:
@@ -22,6 +24,9 @@ jobs:
 
       - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
+
+      # - name: Generate Swagger Docs
+      #   run: php artisan l5-swagger:generate
 
       - name: Set Permissions
         run: chmod -R 775 storage bootstrap/cache

@@ -500,16 +500,24 @@ class BusinessController extends BaseController
     public function getLeadingBusinesses(Request $request)
     {
         $limit = $request->input('limit', 10);
-        $apiUrl = env('API_URL', 'https://api.findmenu.in');
+        // $apiUrl = env('API_URL', 'https://api.findmenu.in');
+        $apiUrl = env('ee', 'https://api.findmenu.in/');
 
         $businesses = Business::where('is_featured', 1)
             ->whereNotNull('image')
-            ->select('id', 'name', 'code', 'image', 'type')
+            ->select('id', 'name', 'code', 'image', 'logo', 'bannerImage', 'businessType')
+            ->with('config')
             ->limit($limit)
             ->get()
             ->map(function ($item) use ($apiUrl) {
                 $item->logo_url = $item->logo
                     ? $apiUrl  . $item->logo
+                    : null;
+                $item->banner_url = $item->bannerImage
+                    ? $apiUrl  . $item->bannerImage
+                    : null;
+                $item->image_url = $item->image
+                    ? $apiUrl  . $item->image
                     : null;
                 return $item;
             });

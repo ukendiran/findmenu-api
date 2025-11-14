@@ -11,6 +11,7 @@ use App\Http\Controllers\{
     FeedbackController,
     ItemController,
     MainCategoryController,
+    MenuController,
     NotificationController,
     BusinessController,
     SubCategoryController,
@@ -79,6 +80,10 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('items', [ItemController::class, 'index']);
     Route::get('items-with-category', [ItemController::class, 'withCategory']);
     Route::get('items/{item}', [ItemController::class, 'show']);
+
+    // Complete menu structure endpoint
+    Route::get('menu/complete', [MenuController::class, 'getCompleteMenu']);
+    Route::get('business/{code}/menu/complete', [MenuController::class, 'getCompleteMenuByCode']);
 
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/{notification}', [NotificationController::class, 'show']);
