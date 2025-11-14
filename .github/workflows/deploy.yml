@@ -7,10 +7,8 @@ on:
       - main # production
 
 jobs:
-
-
-  deploy-test
-    if: github.ref == 'refs/heads/test
+  deploy-test:
+    if: github.ref == 'refs/heads/test'
     runs-on: ubuntu-latest
     name: Deploy to Test Server
     steps:
@@ -25,9 +23,6 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      # - name: Generate Swagger Docs
-      #   run: php artisan l5-swagger:generate
-
       - name: Set Permissions
         run: chmod -R 775 storage bootstrap/cache
 
@@ -40,7 +35,7 @@ jobs:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /api/
+          server-dir: /public_html/api/
           local-dir: ./
           exclude: |
             **/.git*
