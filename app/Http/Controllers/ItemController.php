@@ -412,26 +412,157 @@ class ItemController extends BaseController
      */
     public function updateMenuOrder(Request $request)
     {
-        $data = $request->all();
+        // Validate that updateData array exists
+        if (!$request->has('updateData')) {
+            return $this->sendError('Validation failed', 'The updateData field is required.', 422);
+        }
+
+        $updateData = $request->input('updateData');
+
+        // Validate that updateData is an array
+        if (!is_array($updateData)) {
+            return $this->sendError('Validation failed', 'The updateData field must be an array.', 422);
+        }
+
+        // Validate array size to prevent DoS attacks
+        if (count($updateData) > 1000) {
+            return $this->sendError('Validation failed', 'Cannot update more than 1000 items at once.', 422);
+        }
+
+        // Validate that array is not empty
+        if (empty($updateData)) {
+            return $this->sendError('Validation failed', 'The updateData array cannot be empty.', 422);
+        }
+
+        // Validate each item in the array
+        $errors = [];
+        foreach ($updateData as $index => $item) {
+            // Check if item is an array
+            if (!is_array($item)) {
+                $errors[] = "Item at index {$index} must be an object with id and menuOrderId fields.";
+                continue;
+            }
+
+            // Check for required fields
+            if (!isset($item['id'])) {
+                $errors[] = "Item at index {$index} is missing the required 'id' field.";
+            }
+            if (!isset($item['menuOrderId'])) {
+                $errors[] = "Item at index {$index} is missing the required 'menuOrderId' field.";
+            }
+
+            // Validate data types
+            if (isset($item['id']) && !is_numeric($item['id'])) {
+                $errors[] = "Item at index {$index} has invalid 'id' field. Must be a number.";
+            }
+            if (isset($item['menuOrderId']) && !is_numeric($item['menuOrderId'])) {
+                $errors[] = "Item at index {$index} has invalid 'menuOrderId' field. Must be a number.";
+            }
+
+            // Validate positive integers
+            if (isset($item['id']) && is_numeric($item['id']) && $item['id'] <= 0) {
+                $errors[] = "Item at index {$index} has invalid 'id' field. Must be a positive integer.";
+            }
+            if (isset($item['menuOrderId']) && is_numeric($item['menuOrderId']) && $item['menuOrderId'] < 0) {
+                $errors[] = "Item at index {$index} has invalid 'menuOrderId' field. Must be a non-negative integer.";
+            }
+        }
+
+        // Return validation errors if any
+        if (!empty($errors)) {
+            return $this->sendError('Validation failed', $errors, 422);
+        }
+
+        // Extract all entity IDs
+        $entityIds = array_column($updateData, 'id');
+
+        // Verify all entities exist in database
+        $existingIds = Item::whereIn('id', $entityIds)->pluck('id')->toArray();
+        $missingIds = array_diff($entityIds, $existingIds);
+
+        if (!empty($missingIds)) {
+            return $this->sendError(
+                'Entity not found',
+                'The following item IDs do not exist: ' . implode(', ', $missingIds),
+                404
+            );
+        }
+
+        // Get authenticated user's businessId
+        $user = auth('api')->user();
+        if (!$user) {
+            return $this->sendError('Unauthorized', 'Authentication required.', 401);
+        }
+
+        $userBusinessId = $user->businessId;
+
+        // Verify all entities belong to the authenticated user's business
+        $entities = Item::whereIn('id', $entityIds)->get();
+        $unauthorizedIds = [];
+
+        foreach ($entities as $entity) {
+            if ($entity->businessId != $userBusinessId) {
+                $unauthorizedIds[] = $entity->id;
+            }
+        }
+
+        if (!empty($unauthorizedIds)) {
+            // Log security violation
+            Log::warning("Unauthorized menu order update attempt", [
+                'user_id' => $user->id,
+                'user_business_id' => $userBusinessId,
+                'attempted_item_ids' => $unauthorizedIds,
+                'ip_address' => request()->ip()
+            ]);
+
+            return $this->sendError(
+                'Authorization failed',
+                'You do not have permission to modify these items. Item IDs: ' . implode(', ', $unauthorizedIds),
+                403
+            );
+        }
 
         try {
+            // Log transaction start
+            Log::info("Item menu order update started", [
+                'user_id' => $user->id,
+                'business_id' => $userBusinessId,
+                'entity_count' => count($updateData),
+                'entity_ids' => $entityIds
+            ]);
+
             DB::beginTransaction();
-            foreach ($data['updateData'] as $value) {
-                if (isset($value['id'], $value['menuOrderId'])) {
-                    Item::where('id', $value['id'])->update([
-                        'menuOrderId' => $value['menuOrderId'],
-                    ]);
-                } else {
-                    throw new Exception("Missing id or menuOrderId.");
-                }
+            
+            foreach ($updateData as $value) {
+                Item::where('id', $value['id'])->update([
+                    'menuOrderId' => $value['menuOrderId'],
+                ]);
             }
 
             DB::commit();
+
+            // Log successful transaction
+            Log::info("Item menu order update successful", [
+                'user_id' => $user->id,
+                'business_id' => $userBusinessId,
+                'entity_count' => count($updateData)
+            ]);
+
             return $this->sendResponse([], 'Menu order updated successfully');
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error("Item menu order update failed: " . $e->getMessage());
-            return $this->sendError('Failed to update menu order', $e->getMessage(), 500);
+            
+            // Log detailed error information
+            Log::error("Item menu order update failed", [
+                'user_id' => $user->id,
+                'business_id' => $userBusinessId,
+                'entity_count' => count($updateData),
+                'entity_ids' => $entityIds,
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
+
+            return $this->sendError('Failed to update menu order', 'An error occurred while updating menu order. Please try again.', 500);
         }
     }
 }

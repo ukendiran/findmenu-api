@@ -401,6 +401,73 @@ class BusinessController extends BaseController
     }
     public function getBusinessDetailsByCode(Request $request, $code)
     {
+        $business = Business::with([
+            'category' => function ($q) {
+                $q->where('status', 1)->orderBy('menuOrderId');
+            },
+            'category.subCategory' => function ($q) {
+                $q->where('status', 1)->orderBy('menuOrderId');
+            },
+            'category.subCategory.items' => function ($q) {
+                $q->where('status', 1)->orderBy('menuOrderId');
+            },
+            'config'
+        ])
+            ->where('code', $code);
+
+        if ($request->has('status')) {
+            $business->where('status', $request->input('status'));
+        }
+
+        $apiUrl = env('ee', 'https://api.findmenu.in/');
+
+        $data = $business->first();
+
+        if (!$data) {
+            return $this->sendError('Business not found', [], 404);
+        }
+
+        // Add images for business
+        $data->logo_img_url = $data->logo ? $apiUrl . $data->logo : '';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : 'https://api.findmenu.in/images/no-image.png';
+        $data->img_url = $data->image ? $apiUrl . $data->image : 'https://api.findmenu.in/images/no-image.png';
+
+        /* ------------------------------------------------------------------
+        ADD image_url FOR:
+        - Categories
+        - Subcategories
+        - Items
+    -------------------------------------------------------------------*/
+        foreach ($data->category as $cat) {
+
+            // Category image
+            $cat->image_url = $cat->image
+                ? $apiUrl . $cat->image
+                : 'https://api.findmenu.in/images/no-image.png';
+
+            foreach ($cat->subCategory as $sub) {
+
+                // Subcategory image
+                $sub->image_url = $sub->image
+                    ? $apiUrl . $sub->image
+                    : 'https://api.findmenu.in/images/no-image.png';
+
+                foreach ($sub->items as $item) {
+
+                    // Item image
+                    $item->image_url = $item->image
+                        ? $apiUrl . $item->image
+                        : 'https://api.findmenu.in/images/no-image.png';
+                }
+            }
+        }
+
+        return $this->sendResponse($data, 'Business details fetched successfully');
+    }
+
+
+    public function getBusinessDetailsByCode1(Request $request, $code)
+    {
         // Load business with all necessary relations in one go
         $business = Business::with([
             'category' => function ($q) {
@@ -420,8 +487,21 @@ class BusinessController extends BaseController
         if ($request->has('status')) {
             $business->where('status', $request->input('status'));
         }
+        $apiUrl = env('ee', 'https://api.findmenu.in/');
 
         $data = $business->first();
+
+        if ($data) {
+            $data->logo_img_url = $data->logo
+                ? $apiUrl . $data->logo
+                : '';
+            $data->banner_img_url = $data->bannerImage
+                ? $apiUrl . $data->bannerImage
+                : 'https://api.findmenu.in/images/no-image.png';
+            $data->img_url = $data->image
+                ? $apiUrl . $data->image
+                : 'https://api.findmenu.in/images/no-image.png';
+        }
 
         if (!$data) {
             return $this->sendError('Business not found', [], 404);
