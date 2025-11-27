@@ -39,8 +39,8 @@ class BusinessController extends BaseController
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->is_featured, fn($q) => $q->where('is_featured', $request->is_featured));
 
-        // $apiUrl = env('API_URL');
-        $apiUrl = 'https://api.findmenu.in/';
+        $apiUrl = env('API_URL');
+        // $apiUrl = 'https://api.findmenu.in/';
 
         $data = $query->with('group')->get()->map(function ($item) use ($apiUrl) {
             $item->logo_img_url = $item->logo
@@ -48,10 +48,10 @@ class BusinessController extends BaseController
                 : 'https://via.placeholder.com/200x200?text=No+Image';
             $item->banner_img_url = $item->bannerImage
                 ? $apiUrl  . $item->bannerImage
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
             $item->img_url = $item->image
                 ? $apiUrl  . $item->image
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
 
             return $item;
         });
@@ -419,7 +419,7 @@ class BusinessController extends BaseController
             $business->where('status', $request->input('status'));
         }
 
-        $apiUrl = env('ee', 'https://api.findmenu.in/');
+         $apiUrl = env('API_URL');
 
         $data = $business->first();
 
@@ -429,8 +429,8 @@ class BusinessController extends BaseController
 
         // Add images for business
         $data->logo_img_url = $data->logo ? $apiUrl . $data->logo : '';
-        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : 'https://api.findmenu.in/images/no-image.png';
-        $data->img_url = $data->image ? $apiUrl . $data->image : 'https://api.findmenu.in/images/no-image.png';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : $apiUrl . 'images/no-image.png';
+        $data->img_url = $data->image ? $apiUrl . $data->image : $apiUrl . 'images/no-image.png';
 
         /* ------------------------------------------------------------------
         ADD image_url FOR:
@@ -443,21 +443,21 @@ class BusinessController extends BaseController
             // Category image
             $cat->image_url = $cat->image
                 ? $apiUrl . $cat->image
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
 
             foreach ($cat->subCategory as $sub) {
 
                 // Subcategory image
                 $sub->image_url = $sub->image
                     ? $apiUrl . $sub->image
-                    : 'https://api.findmenu.in/images/no-image.png';
+                    : $apiUrl . 'images/no-image.png';
 
                 foreach ($sub->items as $item) {
 
                     // Item image
                     $item->image_url = $item->image
                         ? $apiUrl . $item->image
-                        : 'https://api.findmenu.in/images/no-image.png';
+                        : $apiUrl . 'images/no-image.png';
                 }
             }
         }
@@ -487,7 +487,7 @@ class BusinessController extends BaseController
         if ($request->has('status')) {
             $business->where('status', $request->input('status'));
         }
-        $apiUrl = env('ee', 'https://api.findmenu.in/');
+        $apiUrl = env('API_URL');
 
         $data = $business->first();
 
@@ -497,10 +497,10 @@ class BusinessController extends BaseController
                 : '';
             $data->banner_img_url = $data->bannerImage
                 ? $apiUrl . $data->bannerImage
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
             $data->img_url = $data->image
                 ? $apiUrl . $data->image
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
         }
 
         if (!$data) {
@@ -580,8 +580,7 @@ class BusinessController extends BaseController
     public function getLeadingBusinesses(Request $request)
     {
         $limit = $request->input('limit', 10);
-        // $apiUrl = env('API_URL', 'https://api.findmenu.in');
-        $apiUrl = env('ee', 'https://api.findmenu.in/');
+        $apiUrl = env('API_URL');
 
         $businesses = Business::where('is_featured', 1)
             ->whereNotNull('image')
