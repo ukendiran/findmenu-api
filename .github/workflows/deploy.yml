@@ -38,20 +38,14 @@ jobs:
           server-dir: /public_html/api/
           local-dir: ./
           exclude: |
-            **/.git**
-            **/.git/**    # full git folder recursive
-            **/.github/**
-            **/.env*
-            **/node_modules/**
-            **/tests/**
-            **/storage/logs/**
-            **/storage/framework/**
-            **/vendor/**/.git**
-            changes.sql
-            .git/objects/
-            .git/refs/
-            .git/hooks/
-            .git/config
+            .git*
+            .git/**
+            .github/**
+            node_modules/**
+            tests/**
+            storage/logs/**
+            storage/framework/**
+            .env*
 
 
 
@@ -89,19 +83,15 @@ jobs:
           server-dir: /api/
           local-dir: ./
           exclude: |
-            **/.git**
-            **/.git/**    # full git folder recursive
-            **/.github/**
-            **/.env*
-            **/node_modules/**
-            **/tests/**
-            **/storage/logs/**
-            **/storage/framework/**
-            **/vendor/**/.git**
+            .git*
+            .git/**
+            .github/**
+            node_modules/**
+            tests/**
+            storage/logs/**
+            storage/framework/**
+            .env*
             changes.sql
-            .git/objects/
-            .git/refs/
-            .git/hooks/
-            .git/config
+
 
 
