@@ -17,7 +17,8 @@ class Group extends Model
         'name',
         'code',
         'description',
-        'image',
+        'logo',
+        'bannerImage',
         'status',
         'created_at',
     ];

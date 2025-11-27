@@ -99,7 +99,8 @@ class GroupsController extends BaseController
                 'unique:businesses', // 👈 Add this line
             ],
             'description' => 'nullable|string',
-            'image'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'bannerImage'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             'status'      => 'nullable|integer',
         ]);
 
@@ -110,17 +111,27 @@ class GroupsController extends BaseController
         $input = $request->all();
 
         // Handle image upload
-        if ($request->hasFile('image')) {
+        if ($request->hasFile('logo')) {
             $businessCode = Group::where('id', $request->businessId)->value('code');
             $folderPath = 'images/' . $businessCode;
 
-            $file = $request->file('image');
+            $file = $request->file('logo');
             $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs("{$folderPath}", $fileName);
-
 
             // Save relative path to DB
-            $input['image'] =  $folderPath . '/' . $fileName;
+            $input['logo'] =  $folderPath . '/' . $fileName;
+        }
+
+        // Handle image upload
+        if ($request->hasFile('bannerImage')) {
+            $businessCode = Group::where('id', $request->businessId)->value('code');
+            $folderPath = 'images/' . $businessCode;
+
+            $file = $request->file('bannerImage');
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+            // Save relative path to DB
+            $input['bannerImage'] =  $folderPath . '/' . $fileName;
         }
 
         $data = Group::create($input);
@@ -200,17 +211,18 @@ class GroupsController extends BaseController
                 Rule::unique('groups')->ignore($id),
             ],
             'description'   => 'nullable|string',
-            'image'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'bannerImage'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
             'status'        => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
             return $this->sendError('Validation failed', $validator->errors(), 422);
         }
-        $input = $request->except('image'); // Get all except image
+        $input = $request->except('logo'); // Get all except image
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
             $folderName = 'groups';
             $destinationPath = public_path("images/$folderName");
             $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
@@ -220,13 +232,32 @@ class GroupsController extends BaseController
             }
 
             // Optional: Delete old image
-            if ($data->image && file_exists(public_path($data->image))) {
-                unlink(public_path($data->image));
+            if ($data->logo && file_exists(public_path($data->logo))) {
+                unlink(public_path($data->logo));
             }
 
             $file->move($destinationPath, $fileName);
 
-            $input['image'] = "images/$folderName/$fileName";
+            $input['logo'] = "images/$folderName/$fileName";
+        }
+        if ($request->hasFile('bannerImage')) {
+            $file = $request->file('bannerImage');
+            $folderName = 'groups';
+            $destinationPath = public_path("images/$folderName");
+            $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0777, true);
+            }
+
+            // Optional: Delete old image
+            if ($data->bannerImage && file_exists(public_path($data->bannerImage))) {
+                unlink(public_path($data->bannerImage));
+            }
+
+            $file->move($destinationPath, $fileName);
+
+            $input['bannerImage'] = "images/$folderName/$fileName";
         }
 
         if (!$data->update($input)) {

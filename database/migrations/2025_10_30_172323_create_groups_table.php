@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('name', 100);
             $table->string('code', 100);
             $table->integer('status')->default(1);
-            $table->text('image')->nullable();
+            $table->text('logo')->nullable();
+            $table->text('bannerImage')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
