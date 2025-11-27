@@ -51,7 +51,7 @@ class BusinessController extends BaseController
                 ? $apiUrl  . $item->bannerImage
                 : $apiUrl . '/images/no-image.png';
             $item->img_url = $item->image
-                ? $apiUrl  . $item->image
+                ? $apiUrl  . "/".$item->image
                 : $apiUrl . '/images/no-image.png';
 
             return $item;
@@ -604,7 +604,7 @@ class BusinessController extends BaseController
                     ? $apiUrl  . $item->bannerImage
                     : null;
                 $item->image_url = $item->image
-                    ? $apiUrl  . $item->image
+                    ? $apiUrl  . "/".$item->image
                     : null;
                 return $item;
             });
