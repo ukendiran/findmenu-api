@@ -20,6 +20,7 @@ class Business extends Model
         'bannerImage',
         'type',
         'status',
+        'group_id',
         'createdAt',
         'social',
         'description',
@@ -30,6 +31,8 @@ class Business extends Model
         'review_url',
         'currency',
         'is_featured',
+        'license_no',
+        'businessType',
     ];
     protected $hidden = [
         'created_at',
@@ -46,9 +49,15 @@ class Business extends Model
     {
         return $this->hasOne(Config::class, 'businessId'); // or 'businessId' if you renamed it
     }
+
+
     public function category()
     {
         return $this->hasMany(MainCategory::class, 'businessId'); // or 'businessId' if you renamed it
     }
 
+    public function group()
+    {
+        return $this->belongsTo(Group::class, 'group_id');
+    }
 }

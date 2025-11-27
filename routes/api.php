@@ -13,16 +13,14 @@ use App\Http\Controllers\{
     FeedbackController,
     ItemController,
     MainCategoryController,
+    MenuController,
     NotificationController,
     BusinessController,
     SubCategoryController,
     UserController,
     DashboardController,
     AdminController,
-    SubscriptionController,
-    SubscriptionPlanController,
-    PaymentController,
-    PaymentStatusController
+    GroupsController
 };
 
 Route::middleware(['validate.ui'])->group(function () {
@@ -62,6 +60,10 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('config', [ConfigController::class, 'index']);
     Route::get('config/{config}', [ConfigController::class, 'show']);
 
+    Route::get('groups', [GroupsController::class, 'index']);
+    Route::get('groups/{group}', [GroupsController::class, 'show']);
+    Route::get('group/{code}', [GroupsController::class, 'code']);
+
     Route::get('contacts', [ContactController::class, 'index']);
     Route::get('contacts/{contact}', [ContactController::class, 'show']);
 
@@ -79,13 +81,19 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('items-with-category', [ItemController::class, 'withCategory']);
     Route::get('items/{item}', [ItemController::class, 'show']);
 
+    // Complete menu structure endpoint
+    Route::get('menu/complete', [MenuController::class, 'getCompleteMenu']);
+    Route::get('business/{code}/menu/complete', [MenuController::class, 'getCompleteMenuByCode']);
+
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/{notification}', [NotificationController::class, 'show']);
 
 
     Route::get('business', [BusinessController::class, 'index']);
-    Route::get('business/{business}', [BusinessController::class, 'show']);
+    Route::get('business/leading', [BusinessController::class, 'getLeadingBusinesses']);
+    Route::get('business/types', [BusinessController::class, 'getUniqueTypes']);
     Route::get('business/code/{business}', [BusinessController::class, 'getBusinessDetailsByCode']);
+    Route::get('business/{business}', [BusinessController::class, 'show']);
 
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{user}', [UserController::class, 'show']);
@@ -118,12 +126,26 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::get('/profile', [AuthController::class, 'me']);
         Route::post('/business/{id}/password', [AuthController::class, 'changePassword']);
         Route::post('/business/password/{id}', [AuthController::class, 'changeUserPassword']);
+        
+        // Theme management
+        Route::post('/user/theme', [AuthController::class, 'updateTheme']);
+        Route::get('/user/theme', [AuthController::class, 'getTheme']);
+
+        // Group resource except GET
+        Route::post('groups', [GroupsController::class, 'store']);
+        Route::put('groups/{group}', [GroupsController::class, 'update']);
+        Route::patch('groups/{group}', [GroupsController::class, 'update']);
+        Route::delete('groups/{group}', [GroupsController::class, 'destroy']);
+
 
         // Config resource except GET
         Route::post('config', [ConfigController::class, 'store']);
         Route::put('config/{config}', [ConfigController::class, 'update']);
         Route::patch('config/{config}', [ConfigController::class, 'update']);
         Route::delete('config/{config}', [ConfigController::class, 'destroy']);
+
+
+
 
         // Repeat for other resources...
         Route::put('contacts/{contact}', [ContactController::class, 'update']);
@@ -175,7 +197,6 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::delete('business/{business}', [BusinessController::class, 'destroy']);
         Route::post('business/{id}/restore', [BusinessController::class, 'restore']);
         Route::get('business/trashed', [BusinessController::class, 'trashed']);
-        Route::get('business/types', [BusinessController::class, 'getUniqueTypes']);
 
         Route::post('users', [UserController::class, 'store']);
         Route::put('users/{user}', [UserController::class, 'update']);
@@ -211,6 +232,32 @@ Route::middleware('web')->group(function () {
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 })->name('health');
+
+Route::get('/seed-featured', function () {
+    $businesses = \App\Models\Business::limit(6)->get();
+
+    $logos = [
+        'mcdonalds.png',
+        'starbucks.png',
+        'subway.png',
+        'kfc.png',
+        'pizzahut.png',
+        'dominos.png',
+    ];
+
+    foreach ($businesses as $index => $business) {
+        $business->update([
+            'status' => 1,
+            'is_featured' => 1,
+            'logo' => $logos[$index] ?? 'logo.png',
+        ]);
+    }
+
+    return response()->json([
+        'message' => 'Updated ' . $businesses->count() . ' businesses to featured',
+        'businesses' => $businesses
+    ]);
+});
 
 Route::fallback(function () {
     return response()->json(['message' => 'Not Found'], 404);
