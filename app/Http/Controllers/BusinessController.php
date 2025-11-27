@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Business;
 use App\Models\Config;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
@@ -39,8 +40,8 @@ class BusinessController extends BaseController
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->is_featured, fn($q) => $q->where('is_featured', $request->is_featured));
 
-        // $apiUrl = env('API_URL');
-        $apiUrl = 'https://api.findmenu.in/';
+        $apiUrl = env('API_URL');
+        // $apiUrl = 'https://api.findmenu.in/';
 
         $data = $query->with('group')->get()->map(function ($item) use ($apiUrl) {
             $item->logo_img_url = $item->logo
@@ -48,10 +49,10 @@ class BusinessController extends BaseController
                 : 'https://via.placeholder.com/200x200?text=No+Image';
             $item->banner_img_url = $item->bannerImage
                 ? $apiUrl  . $item->bannerImage
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
             $item->img_url = $item->image
                 ? $apiUrl  . $item->image
-                : 'https://api.findmenu.in/images/no-image.png';
+                : $apiUrl . 'images/no-image.png';
 
             return $item;
         });
@@ -63,8 +64,7 @@ class BusinessController extends BaseController
         return $this->sendResponse($data, 'Business list retrieved successfully');
     }
 
-
-    /**
+   /**
      * @OA\Post(
      *     path="/business",
      *     tags={"Business"},
@@ -98,7 +98,6 @@ class BusinessController extends BaseController
 
         // 1. Create Business
         $business = Business::create($request->all());
-
         $business->refresh();
 
         // 2. Create Config for the Business
@@ -349,7 +348,7 @@ class BusinessController extends BaseController
             'category.subCategory.items',
             'config'
         ])
-            ->where('code', $code)
+            ->whereRaw('LOWER(code) = ?', [strtolower($code)])
             ->first();
 
         if (!$data) {
@@ -389,7 +388,7 @@ class BusinessController extends BaseController
     {
         // Load business with all necessary relations in one go
 
-        $data = Business::firstWhere('code', $code);
+        $data = Business::whereRaw('LOWER(code) = ?', [strtolower($code)])->first();
 
         if (!$data) {
             return $this->sendError('Business not found', [], 404);
@@ -401,7 +400,6 @@ class BusinessController extends BaseController
     }
     public function getBusinessDetailsByCode(Request $request, $code)
     {
-        // Load business with all necessary relations in one go
         $business = Business::with([
             'category' => function ($q) {
                 $q->where('status', 1)->orderBy('menuOrderId');
@@ -416,16 +414,108 @@ class BusinessController extends BaseController
         ])
             ->where('code', $code);
 
-        // Optional: filter by status if requested
         if ($request->has('status')) {
             $business->where('status', $request->input('status'));
         }
+
+         $apiUrl = env('API_URL');
 
         $data = $business->first();
 
         if (!$data) {
             return $this->sendError('Business not found', [], 404);
         }
+
+        // Add images for business
+        $data->logo_img_url = $data->logo ? $apiUrl . $data->logo : '';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : $apiUrl . 'images/no-image.png';
+        $data->img_url = $data->image ? $apiUrl . $data->image : $apiUrl . 'images/no-image.png';
+
+        /* ------------------------------------------------------------------
+        ADD image_url FOR:
+        - Categories
+        - Subcategories
+        - Items
+    -------------------------------------------------------------------*/
+        foreach ($data->category as $cat) {
+
+            // Category image
+            $cat->image_url = $cat->image
+                ? $apiUrl . $cat->image
+                : $apiUrl . 'images/no-image.png';
+
+            foreach ($cat->subCategory as $sub) {
+
+                // Subcategory image
+                $sub->image_url = $sub->image
+                    ? $apiUrl . $sub->image
+                    : $apiUrl . 'images/no-image.png';
+
+                foreach ($sub->items as $item) {
+
+                    // Item image
+                    $item->image_url = $item->image
+                        ? $apiUrl . $item->image
+                        : $apiUrl . 'images/no-image.png';
+                }
+            }
+        }
+
+        return $this->sendResponse($data, 'Business details fetched successfully');
+    }
+
+
+    public function getBusinessDetailsByCode1(Request $request, $code)
+    {
+        // Load business with all necessary relations in one go
+        $business = Business::with([
+            'category' => function ($q) {
+                $q->where('status', 1)->orderBy('menuOrderId');
+            },
+            'category.subCategory' => function ($q) {
+                $q->where('status', 1)->orderBy('menuOrderId');
+            },
+            'category.subCategory.items' => function ($q) {
+                $q->where('status', 1)->orderBy('menuOrderId');
+            },
+            'config'
+        ])
+            ->whereRaw('LOWER(code) = ?', [strtolower($code)]);
+
+        // Optional: filter by status if requested
+        if ($request->has('status')) {
+            $business->where('status', $request->input('status'));
+        }
+        $apiUrl = env('API_URL');
+
+        $data = $business->first();
+
+        if ($data) {
+            $data->logo_img_url = $data->logo
+                ? $apiUrl . $data->logo
+                : '';
+            $data->banner_img_url = $data->bannerImage
+                ? $apiUrl . $data->bannerImage
+                : $apiUrl . 'images/no-image.png';
+            $data->img_url = $data->image
+                ? $apiUrl . $data->image
+                : $apiUrl . 'images/no-image.png';
+        }
+
+        if (!$data) {
+            return $this->sendError('Business not found', [], 404);
+        }
+
+        $subscription = Subscription::where('businessId', $data->id)
+            // ->where('status', 'active') // Only active subscriptions
+            ->where('ends_at', '>=', now()) // Not expired
+            ->first();
+
+        $hasActiveSubscription = !is_null($subscription);
+
+        $data['subscription'] = $subscription;
+        $data['isSubscribed'] = $hasActiveSubscription;
+
 
         return $this->sendResponse($data, 'Business details fetched successfully');
     }
@@ -500,8 +590,7 @@ class BusinessController extends BaseController
     public function getLeadingBusinesses(Request $request)
     {
         $limit = $request->input('limit', 10);
-        // $apiUrl = env('API_URL', 'https://api.findmenu.in');
-        $apiUrl = env('ee', 'https://api.findmenu.in/');
+        $apiUrl = env('API_URL');
 
         $businesses = Business::where('is_featured', 1)
             ->whereNotNull('image')
