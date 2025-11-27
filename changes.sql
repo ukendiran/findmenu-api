@@ -1,1 +1,5 @@
-ALTER TABLE `businesses` ADD `license_no` VARCHAR(25) NULL DEFAULT NULL AFTER `currency`;
+ALTER TABLE `subscriptions` ADD `deleted_at` TIMESTAMP NULL AFTER `updated_at`;
+
+ALTER TABLE `subscription_plans` ADD `deleted_at` TIMESTAMP NULL AFTER `updated_at`;
+
+ALTER TABLE `payments` ADD `deleted_at` TIMESTAMP NULL AFTER `updated_at`;
