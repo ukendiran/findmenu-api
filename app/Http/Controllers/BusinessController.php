@@ -49,10 +49,10 @@ class BusinessController extends BaseController
                 : 'https://via.placeholder.com/200x200?text=No+Image';
             $item->banner_img_url = $item->bannerImage
                 ? $apiUrl  . $item->bannerImage
-                : $apiUrl . 'images/no-image.png';
+                : $apiUrl . '/images/no-image.png';
             $item->img_url = $item->image
                 ? $apiUrl  . $item->image
-                : $apiUrl . 'images/no-image.png';
+                : $apiUrl . '/images/no-image.png';
 
             return $item;
         });
@@ -426,8 +426,8 @@ class BusinessController extends BaseController
 
         // Add images for business
         $data->logo_img_url = $data->logo ? $apiUrl . $data->logo : '';
-        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : $apiUrl . 'images/no-image.png';
-        $data->img_url = $data->image ? $apiUrl . $data->image : $apiUrl . 'images/no-image.png';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : $apiUrl . '/images/no-image.png';
+        $data->img_url = $data->image ? $apiUrl . $data->image : $apiUrl . '/images/no-image.png';
 
         /* ------------------------------------------------------------------
         ADD image_url FOR:
@@ -440,21 +440,21 @@ class BusinessController extends BaseController
             // Category image
             $cat->image_url = $cat->image
                 ? $apiUrl . $cat->image
-                : $apiUrl . 'images/no-image.png';
+                : $apiUrl . '/images/no-image.png';
 
             foreach ($cat->subCategory as $sub) {
 
                 // Subcategory image
                 $sub->image_url = $sub->image
                     ? $apiUrl . $sub->image
-                    : $apiUrl . 'images/no-image.png';
+                    : $apiUrl . '/images/no-image.png';
 
                 foreach ($sub->items as $item) {
 
                     // Item image
                     $item->image_url = $item->image
                         ? $apiUrl . $item->image
-                        : $apiUrl . 'images/no-image.png';
+                        : $apiUrl . '/images/no-image.png';
                 }
             }
         }
@@ -494,10 +494,10 @@ class BusinessController extends BaseController
                 : '';
             $data->banner_img_url = $data->bannerImage
                 ? $apiUrl . $data->bannerImage
-                : $apiUrl . 'images/no-image.png';
+                : $apiUrl . '/images/no-image.png';
             $data->img_url = $data->image
                 ? $apiUrl . $data->image
-                : $apiUrl . 'images/no-image.png';
+                : $apiUrl . '/images/no-image.png';
         }
 
         if (!$data) {
