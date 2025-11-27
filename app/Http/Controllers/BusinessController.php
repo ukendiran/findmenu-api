@@ -64,8 +64,7 @@ class BusinessController extends BaseController
         return $this->sendResponse($data, 'Business list retrieved successfully');
     }
 
-
-    /**
+   /**
      * @OA\Post(
      *     path="/business",
      *     tags={"Business"},
@@ -99,7 +98,6 @@ class BusinessController extends BaseController
 
         // 1. Create Business
         $business = Business::create($request->all());
-
         $business->refresh();
 
         // 2. Create Config for the Business
