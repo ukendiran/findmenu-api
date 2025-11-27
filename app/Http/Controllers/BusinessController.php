@@ -45,10 +45,10 @@ class BusinessController extends BaseController
 
         $data = $query->with('group')->get()->map(function ($item) use ($apiUrl) {
             $item->logo_img_url = $item->logo
-                ? $apiUrl  . $item->logo
+                ? $apiUrl  ."/". $item->logo
                 : 'https://via.placeholder.com/200x200?text=No+Image';
             $item->banner_img_url = $item->bannerImage
-                ? $apiUrl  . $item->bannerImage
+                ? $apiUrl  ."/". $item->bannerImage
                 : $apiUrl . '/images/no-image.png';
             $item->img_url = $item->image
                 ? $apiUrl  . "/".$item->image
@@ -598,10 +598,10 @@ class BusinessController extends BaseController
             ->get()
             ->map(function ($item) use ($apiUrl) {
                 $item->logo_url = $item->logo
-                    ? $apiUrl  . $item->logo
+                    ? $apiUrl  ."/". $item->logo
                     : null;
                 $item->banner_url = $item->bannerImage
-                    ? $apiUrl  . $item->bannerImage
+                    ? $apiUrl  ."/". $item->bannerImage
                     : null;
                 $item->image_url = $item->image
                     ? $apiUrl  . "/".$item->image
