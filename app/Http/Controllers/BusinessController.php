@@ -425,9 +425,9 @@ class BusinessController extends BaseController
         }
 
         // Add images for business
-        $data->logo_img_url = $data->logo ? $apiUrl . $data->logo : '';
-        $data->banner_img_url = $data->bannerImage ? $apiUrl . $data->bannerImage : $apiUrl . '/images/no-image.png';
-        $data->img_url = $data->image ? $apiUrl . $data->image : $apiUrl . '/images/no-image.png';
+        $data->logo_img_url = $data->logo ? $apiUrl ."/". $data->logo : '';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl ."/". $data->bannerImage : $apiUrl . '/images/no-image.png';
+        $data->img_url = $data->image ? $apiUrl ."/". $data->image : $apiUrl . '/images/no-image.png';
 
         /* ------------------------------------------------------------------
         ADD image_url FOR:
@@ -439,21 +439,21 @@ class BusinessController extends BaseController
 
             // Category image
             $cat->image_url = $cat->image
-                ? $apiUrl . $cat->image
+                ? $apiUrl ."/". $cat->image
                 : $apiUrl . '/images/no-image.png';
 
             foreach ($cat->subCategory as $sub) {
 
                 // Subcategory image
                 $sub->image_url = $sub->image
-                    ? $apiUrl . $sub->image
+                    ? $apiUrl ."/". $sub->image
                     : $apiUrl . '/images/no-image.png';
 
                 foreach ($sub->items as $item) {
 
                     // Item image
                     $item->image_url = $item->image
-                        ? $apiUrl . $item->image
+                        ? $apiUrl ."/". $item->image
                         : $apiUrl . '/images/no-image.png';
                 }
             }
@@ -490,13 +490,13 @@ class BusinessController extends BaseController
 
         if ($data) {
             $data->logo_img_url = $data->logo
-                ? $apiUrl . $data->logo
+                ? $apiUrl ."/". $data->logo
                 : '';
             $data->banner_img_url = $data->bannerImage
-                ? $apiUrl . $data->bannerImage
+                ? $apiUrl ."/". $data->bannerImage
                 : $apiUrl . '/images/no-image.png';
             $data->img_url = $data->image
-                ? $apiUrl . $data->image
+                ? $apiUrl ."/". $data->image
                 : $apiUrl . '/images/no-image.png';
         }
 
