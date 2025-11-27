@@ -48,6 +48,11 @@ jobs:
             **/storage/framework/**
             **/vendor/**/.git**
             changes.sql
+            .git/objects/
+            .git/refs/
+            .git/hooks/
+            .git/config
+
 
 
   deploy-production:
@@ -94,4 +99,9 @@ jobs:
             **/storage/framework/**
             **/vendor/**/.git**
             changes.sql
+            .git/objects/
+            .git/refs/
+            .git/hooks/
+            .git/config
+
 
