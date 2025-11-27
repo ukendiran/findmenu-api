@@ -143,11 +143,9 @@ class BusinessController extends BaseController
     {
         // $data = Business::find($id);
         $data = Business::with('group')->find($id);
-
         if (!$data) {
             return $this->sendError('Not Found', 'Business not found', 404);
         }
-
         return $this->sendResponse($data, 'Business retrieved successfully');
     }
 
