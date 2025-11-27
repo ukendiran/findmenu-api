@@ -38,15 +38,17 @@ jobs:
           server-dir: /public_html/api/
           local-dir: ./
           exclude: |
-            **/.git*
+            **/.git**
+            **/.git/**    # full git folder recursive
             **/.github/**
             **/.env*
             **/node_modules/**
             **/tests/**
             **/storage/logs/**
             **/storage/framework/**
-            **/vendor/**/.git*
+            **/vendor/**/.git**
             changes.sql
+
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -82,12 +84,14 @@ jobs:
           server-dir: /api/
           local-dir: ./
           exclude: |
-            **/.git*
+            **/.git**
+            **/.git/**    # full git folder recursive
             **/.github/**
             **/.env*
             **/node_modules/**
             **/tests/**
             **/storage/logs/**
             **/storage/framework/**
-            **/vendor/**/.git*
+            **/vendor/**/.git**
             changes.sql
+
