@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SubCategory;
+use App\Helpers\FileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -161,7 +162,8 @@ class SubCategoryController extends BaseController
                 'max:100',
                 Rule::unique('sub_categories')->where(function ($query) use ($request) {
                     return $query->where('businessId', $request->businessId)
-                        ->where('categoryId', $request->categoryId);
+                        ->where('categoryId', $request->categoryId)
+                        ->where('status', 1);
                 }),
             ],
             'description' => 'nullable|string',
@@ -253,6 +255,9 @@ class SubCategoryController extends BaseController
         }
 
         // Validation rules
+        $businessId = $request->businessId ?? $subCategory->businessId;
+        $categoryId = $request->categoryId ?? $subCategory->categoryId;
+        
         $validator = Validator::make($request->all(), [
             'name' => [
                 'sometimes',
@@ -260,12 +265,13 @@ class SubCategoryController extends BaseController
                 'string',
                 'max:100',
                 Rule::unique('sub_categories', 'name')
-                    ->where(function ($query) use ($request, $subCategory) {
+                    ->where(function ($query) use ($businessId, $categoryId) {
                         return $query
-                            ->where('businessId', $request->businessId ?? $subCategory->businessId)
-                            ->where('categoryId', $request->categoryId ?? $subCategory->categoryId);
+                            ->where('businessId', $businessId)
+                            ->where('categoryId', $categoryId)
+                            ->where('status', 1);
                     })
-                    ->ignore($subCategory->id),
+                    ->ignore($subCategory->id, 'id'),
             ],
             'description'   => 'nullable|string',
             'image'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -281,7 +287,14 @@ class SubCategoryController extends BaseController
         }
 
         // Prepare input data
-        $input = $request->except('image', 'code');
+        $input = $request->except('image', 'code', 'removeImage');
+
+        // Handle image removal
+        if ($request->has('removeImage') && $request->removeImage == '1') {
+            // Delete old image if exists
+            FileHelper::deleteImage($subCategory->image);
+            $input['image'] = null;
+        }
 
         // Handle image upload
         if ($request->hasFile('image')) {
@@ -302,9 +315,7 @@ class SubCategoryController extends BaseController
                 $file->move($destinationPath, $fileName);
 
                 // Delete old image if exists
-                if ($subCategory->image && file_exists(public_path($subCategory->image))) {
-                    @unlink(public_path($subCategory->image));
-                }
+                FileHelper::deleteImage($subCategory->image);
 
                 $input['image'] = "images/$folderName/$fileName";
             } catch (Exception $e) {

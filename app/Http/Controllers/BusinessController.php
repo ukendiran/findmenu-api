@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Config;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Helpers\FileHelper;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -186,10 +187,24 @@ class BusinessController extends BaseController
             'currency' => 'nullable|string|max:20',
         ]);
 
-        $input = $request->except('image'); // Get all except image
+        $input = $request->except('image', 'bannerImage', 'removeLogo', 'removeBanner'); // Get all except images
 
         if ($validator->fails()) {
             return $this->sendError('Validation failed', $validator->errors(), 422);
+        }
+
+        // Handle logo image removal
+        if ($request->has('removeLogo') && $request->removeLogo == '1') {
+            // Delete old logo image if exists
+            FileHelper::deleteImage($data->image);
+            $input['image'] = null;
+        }
+
+        // Handle banner image removal
+        if ($request->has('removeBanner') && $request->removeBanner == '1') {
+            // Delete old banner image if exists
+            FileHelper::deleteImage($data->bannerImage);
+            $input['bannerImage'] = null;
         }
 
         if ($request->hasFile('image')) {
@@ -203,9 +218,7 @@ class BusinessController extends BaseController
             }
 
             // Optional: Delete old image
-            if ($data->image && file_exists(public_path($data->image))) {
-                unlink(public_path($data->image));
-            }
+            FileHelper::deleteImage($data->image);
 
             $file->move($destinationPath, $fileName);
 
@@ -222,10 +235,8 @@ class BusinessController extends BaseController
                 mkdir($destinationPath, 0777, true);
             }
 
-            // Optional: Delete old image
-            if ($data->image && file_exists(public_path($data->image))) {
-                unlink(public_path($data->image));
-            }
+            // Optional: Delete old banner image
+            FileHelper::deleteImage($data->bannerImage);
 
             $file->move($destinationPath, $fileName);
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MainCategory;
+use App\Helpers\FileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -110,7 +111,8 @@ class MainCategoryController extends BaseController
                 'string',
                 'max:100',
                 Rule::unique('main_categories')->where(function ($query) use ($request) {
-                    return $query->where('businessId', $request->businessId);
+                    return $query->where('businessId', $request->businessId)
+                        ->where('status', 1);
                 }),
             ],
             'description' => 'nullable|string',
@@ -199,7 +201,8 @@ class MainCategoryController extends BaseController
                 Rule::unique('main_categories', 'name')
                     ->where(function ($query) use ($request) {
                         return $query
-                            ->where('businessId', $request->businessId);
+                            ->where('businessId', $request->businessId)
+                            ->where('status', 1);
                     })
                     ->ignore($data->id, 'id'),
             ],
@@ -228,9 +231,7 @@ class MainCategoryController extends BaseController
             }
 
             // Optional: Delete old image
-            if ($data->image && file_exists(public_path($data->image))) {
-                unlink(public_path($data->image));
-            }
+            FileHelper::deleteImage($data->image);
 
             $file->move($destinationPath, $fileName);
 

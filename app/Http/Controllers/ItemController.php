@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Business;
 use App\Models\Item;
+use App\Helpers\FileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -168,7 +169,9 @@ class ItemController extends BaseController
                 'string',
                 'max:100',
                 Rule::unique('items')->where(function ($query) use ($request) {
-                    return $query->where('businessId', $request->businessId)->where('categoryId', $request->categoryId);
+                    return $query->where('businessId', $request->businessId)
+                        ->where('categoryId', $request->categoryId)
+                        ->where('status', 1);
                 }),
             ],
             'description' => 'nullable|string',
@@ -266,7 +269,8 @@ class ItemController extends BaseController
                     ->where(function ($query) use ($request) {
                         return $query
                             ->where('businessId', $request->businessId)
-                            ->where('categoryId', $request->categoryId);
+                            ->where('categoryId', $request->categoryId)
+                            ->where('status', 1);
                     })
                     ->ignore($data->id, 'id'),
             ],
@@ -283,7 +287,14 @@ class ItemController extends BaseController
         if ($validator->fails()) {
             return $this->sendError('Validation failed', $validator->errors(), 422);
         }
-        $input = $request->except('image'); // Get all except image
+        $input = $request->except('image', 'removeImage'); // Get all except image
+
+        // Handle image removal
+        if ($request->has('removeImage') && $request->removeImage == '1') {
+            // Delete old image if exists
+            FileHelper::deleteImage($data->image);
+            $input['image'] = null;
+        }
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
@@ -296,9 +307,7 @@ class ItemController extends BaseController
             }
 
             // Optional: Delete old image
-            if ($data->image && file_exists(public_path($data->image))) {
-                unlink(public_path($data->image));
-            }
+            FileHelper::deleteImage($data->image);
 
             $file->move($destinationPath, $fileName);
 
