@@ -3,18 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SubCategory extends Model
 {
-    use SoftDeletes;
     public $timestamps = false;
     protected $table = 'sub_categories';
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     protected $fillable = [

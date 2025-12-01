@@ -3,14 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Config extends Model
 {
-    use SoftDeletes;
     protected $table = 'configs';
     public $timestamps = false;
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
     protected $fillable = [
         'json',
         'status',
@@ -41,7 +39,6 @@ class Config extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     public function business()

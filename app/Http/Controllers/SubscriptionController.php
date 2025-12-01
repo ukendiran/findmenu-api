@@ -205,48 +205,4 @@ class SubscriptionController extends BaseController
         return $this->sendResponse(null, 'Subscription deleted successfully');
     }
 
-    /**
-     * @OA\Post(
-     *     path="/subscription/restore/{id}",
-     *     summary="Restore a deleted subscription",
-     *     tags={"Subscription"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Subscription restored successfully"),
-     *     @OA\Response(response=404, description="Subscription not found in trash")
-     * )
-     */
-    public function restore($id)
-    {
-        $data = Subscription::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Subscription not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Subscription restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/subscription/trashed",
-     *     summary="List all trashed subscriptions",
-     *     tags={"Subscription"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Trashed subscriptions retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed subscription found")
-     * )
-     */
-    public function trashed()
-    {
-        $data = Subscription::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed subscription found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed subscription retrieved successfully');
-    }
 }

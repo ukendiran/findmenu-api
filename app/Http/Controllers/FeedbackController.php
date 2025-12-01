@@ -137,46 +137,4 @@ class FeedbackController extends BaseController
         return $this->sendResponse(null, 'Feedback deleted successfully');
     }
 
-    /**
-     * @OA\Post(
-     *     path="/feedbacks/restore/{id}",
-     *     summary="Restore a deleted feedback",
-     *     tags={"Feedback"},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Feedback restored successfully"),
-     *     @OA\Response(response=404, description="Feedback not found in trash")
-     * )
-     */
-    public function restore($id)
-    {
-        $data = Feedback::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Feedback not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Feedback restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/feedbacks/trashed",
-     *     summary="List all trashed feedbacks",
-     *     tags={"Feedback"},
-     *     @OA\Response(response=200, description="Trashed feedback retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed feedback found")
-     * )
-     */
-    public function trashed()
-    {
-        $data = Feedback::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed feedback found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed feedback retrieved successfully');
-    }
 }

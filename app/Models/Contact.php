@@ -4,16 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 class Contact extends Model
 {
     use HasFactory;
-    use SoftDeletes;
     protected $table = 'contacts';
     public $timestamps = false;
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
     protected $fillable = [
         'name',
         'email',
@@ -25,6 +23,5 @@ class Contact extends Model
      protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 }

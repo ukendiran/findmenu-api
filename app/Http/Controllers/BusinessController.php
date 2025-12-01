@@ -50,10 +50,10 @@ class BusinessController extends BaseController
                 : 'https://via.placeholder.com/200x200?text=No+Image';
             $item->banner_img_url = $item->bannerImage
                 ? $apiUrl  ."/". $item->bannerImage
-                : $apiUrl . '/images/no-image.png';
+                : $apiUrl . '/images/no-image.jpg';
             $item->img_url = $item->image
                 ? $apiUrl  . "/".$item->image
-                : $apiUrl . '/images/no-image.png';
+                : $apiUrl . '/images/no-image.jpg';
 
             return $item;
         });
@@ -84,8 +84,8 @@ class BusinessController extends BaseController
             'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'logo' => 'nullable|string',
-            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'bannerImage' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,avif|max:2048',
+            'bannerImage' => 'nullable|file|mimes:jpeg,png,jpg,webp,avif|max:2048',
             'type' => 'nullable|string',
             'status' => 'nullable|integer',
             'group_id' => 'nullable|integer',
@@ -178,8 +178,8 @@ class BusinessController extends BaseController
             'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'logo' => 'nullable|string|max:100',
-            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'bannerImage' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,avif|max:2048',
+            'bannerImage' => 'nullable|file|mimes:jpeg,png,jpg,webp,avif|max:2048',
             'status' => 'nullable|integer',
             'group_id' => 'nullable|integer',
             'type' => 'nullable|string',
@@ -271,51 +271,6 @@ class BusinessController extends BaseController
 
         $data->delete();
         return $this->sendResponse(null, 'Business deleted successfully');
-    }
-
-    /**
-     * @OA\Post(
-     *     path="/business/{id}/restore",
-     *     tags={"Business"},
-     *     summary="Restore soft-deleted business",
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Business restored successfully"),
-     *     @OA\Response(response=404, description="Business not found in trash")
-     * )
-     */
-
-    public function restore($id)
-    {
-        $data = Business::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Business not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Business restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/business/trashed",
-     *     tags={"Business"},
-     *     summary="Get all soft-deleted business",
-     *     @OA\Response(response=200, description="Trashed business retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed business found")
-     * )
-     */
-
-    public function trashed()
-    {
-        $data = Business::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed business found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed business retrieved successfully');
     }
 
     /**
@@ -437,8 +392,8 @@ class BusinessController extends BaseController
 
         // Add images for business
         $data->logo_img_url = $data->logo ? $apiUrl ."/". $data->logo : '';
-        $data->banner_img_url = $data->bannerImage ? $apiUrl ."/". $data->bannerImage : $apiUrl . '/images/no-image.png';
-        $data->img_url = $data->image ? $apiUrl ."/". $data->image : $apiUrl . '/images/no-image.png';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl ."/". $data->bannerImage : $apiUrl . '/images/no-image.jpg';
+        $data->img_url = $data->image ? $apiUrl ."/". $data->image : $apiUrl . '/images/no-image.jpg';
 
         /* ------------------------------------------------------------------
         ADD image_url FOR:
@@ -451,21 +406,21 @@ class BusinessController extends BaseController
             // Category image
             $cat->image_url = $cat->image
                 ? $apiUrl ."/". $cat->image
-                : $apiUrl . '/images/no-image.png';
+                : $apiUrl . '/images/no-image.jpg';
 
             foreach ($cat->subCategory as $sub) {
 
                 // Subcategory image
                 $sub->image_url = $sub->image
                     ? $apiUrl ."/". $sub->image
-                    : $apiUrl . '/images/no-image.png';
+                    : $apiUrl . '/images/no-image.jpg';
 
                 foreach ($sub->items as $item) {
 
                     // Item image
                     $item->image_url = $item->image
                         ? $apiUrl ."/". $item->image
-                        : $apiUrl . '/images/no-image.png';
+                        : $apiUrl . '/images/no-image.jpg';
                 }
             }
         }
@@ -505,10 +460,10 @@ class BusinessController extends BaseController
                 : '';
             $data->banner_img_url = $data->bannerImage
                 ? $apiUrl ."/". $data->bannerImage
-                : $apiUrl . '/images/no-image.png';
+                : $apiUrl . '/images/no-image.jpg';
             $data->img_url = $data->image
                 ? $apiUrl ."/". $data->image
-                : $apiUrl . '/images/no-image.png';
+                : $apiUrl . '/images/no-image.jpg';
         }
 
         if (!$data) {

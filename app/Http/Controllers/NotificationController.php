@@ -147,48 +147,4 @@ class NotificationController extends BaseController
         return $this->sendResponse(null, 'Notification deleted successfully');
     }
 
-    /**
-     * @OA\Post(
-     *     path="/notification/restore/{id}",
-     *     summary="Restore a deleted notification",
-     *     tags={"Notification"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Notification restored successfully"),
-     *     @OA\Response(response=404, description="Notification not found in trash")
-     * )
-     */
-    public function restore($id)
-    {
-        $data = Notification::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Notification not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Notification restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/notification/trashed",
-     *     summary="List all trashed notifications",
-     *     tags={"Notification"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Trashed notifications retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed notification found")
-     * )
-     */
-    public function trashed()
-    {
-        $data = Notification::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed notification found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed notification retrieved successfully');
-    }
 }

@@ -3,15 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Group extends Model
 {
 
-    use SoftDeletes;
     public $timestamps = false;
     protected $table = 'groups';
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
 
     protected $fillable = [
         'name',
@@ -25,7 +23,6 @@ class Group extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     public function images()

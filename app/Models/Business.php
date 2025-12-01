@@ -3,11 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Business extends Model
 {
-    use SoftDeletes;
     protected $table = 'businesses';
     protected $fillable = [
         'name',
@@ -37,12 +35,11 @@ class Business extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     public $timestamps = false;
 
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
 
 
     public function config()

@@ -20,7 +20,11 @@ use App\Http\Controllers\{
     UserController,
     DashboardController,
     AdminController,
-    GroupsController
+    GroupsController,
+    PaymentController,
+    PaymentStatusController,
+    SubscriptionController,
+    SubscriptionPlanController
 };
 
 Route::middleware(['validate.ui'])->group(function () {
@@ -151,74 +155,54 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::put('contacts/{contact}', [ContactController::class, 'update']);
         Route::patch('contacts/{contact}', [ContactController::class, 'update']);
         Route::delete('contacts/{contact}', [ContactController::class, 'destroy']);
-        Route::post('contacts/{id}/restore', [ContactController::class, 'restore']);
-        Route::get('contacts/trashed', [ContactController::class, 'trashed']);
 
         Route::put('feedbacks/{feedback}', [FeedbackController::class, 'update']);
         Route::patch('feedbacks/{feedback}', [FeedbackController::class, 'update']);
         Route::delete('feedbacks/{feedback}', [FeedbackController::class, 'destroy']);
-        Route::post('feedbacks/{id}/restore', [FeedbackController::class, 'restore']);
-        Route::get('feedbacks/trashed', [FeedbackController::class, 'trashed']);
 
         Route::post('items', [ItemController::class, 'store']);
         Route::put('items/{item}', [ItemController::class, 'update']);
         Route::patch('items/{item}', [ItemController::class, 'update']);
         Route::delete('items/{item}', [ItemController::class, 'destroy']);
-        Route::post('items/{id}/restore', [ItemController::class, 'restore']);
-        Route::get('items/trashed', [ItemController::class, 'trashed']);
         Route::post('items/menu-order', [ItemController::class, 'updateMenuOrder']);
 
         Route::post('main-categories', [MainCategoryController::class, 'store']);
         Route::put('main-categories/{category}', [MainCategoryController::class, 'update']);
         Route::patch('main-categories/{category}', [MainCategoryController::class, 'update']);
         Route::delete('main-categories/{category}', [MainCategoryController::class, 'destroy']);
-        Route::post('main-categories/{id}/restore', [MainCategoryController::class, 'restore']);
-        Route::get('main-categories/trashed', [MainCategoryController::class, 'trashed']);
         Route::post('main-categories/menu-order', [MainCategoryController::class, 'updateMenuOrder']);
 
         Route::post('sub-categories', [SubCategoryController::class, 'store']);
         Route::put('sub-categories/{subCategory}', [SubCategoryController::class, 'update']);
         Route::patch('sub-categories/{subCategory}', [SubCategoryController::class, 'update']);
         Route::delete('sub-categories/{subCategory}', [SubCategoryController::class, 'destroy']);
-        Route::post('sub-categories/{id}/restore', [SubCategoryController::class, 'restore']);
-        Route::get('sub-categories/trashed', [SubCategoryController::class, 'trashed']);
         Route::post('sub-categories/menu-order', [SubCategoryController::class, 'updateMenuOrder']);
 
         Route::post('notifications', [NotificationController::class, 'store']);
         Route::put('notifications/{notification}', [NotificationController::class, 'update']);
         Route::patch('notifications/{notification}', [NotificationController::class, 'update']);
         Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
-        Route::post('notifications/{id}/restore', [NotificationController::class, 'restore']);
-        Route::get('notifications/trashed', [NotificationController::class, 'trashed']);
 
         Route::post('business', [BusinessController::class, 'store']);
         Route::put('business/{business}', [BusinessController::class, 'update']);
         Route::patch('business/{business}', [BusinessController::class, 'update']);
         Route::delete('business/{business}', [BusinessController::class, 'destroy']);
-        Route::post('business/{id}/restore', [BusinessController::class, 'restore']);
-        Route::get('business/trashed', [BusinessController::class, 'trashed']);
 
         Route::post('users', [UserController::class, 'store']);
         Route::put('users/{user}', [UserController::class, 'update']);
         Route::patch('users/{user}', [UserController::class, 'update']);
         Route::delete('users/{user}', [UserController::class, 'destroy']);
-        Route::post('users/{id}/restore', [UserController::class, 'restore']);
-        Route::get('users/trashed', [UserController::class, 'trashed']);
 
         Route::post('admins', [AdminController::class, 'store']);
         Route::put('admins/{user}', [AdminController::class, 'update']);
         Route::patch('admins/{user}', [AdminController::class, 'update']);
         Route::delete('admins/{user}', [AdminController::class, 'destroy']);
-        Route::post('admins/{id}/restore', [AdminController::class, 'restore']);
-        Route::get('admins/trashed', [AdminController::class, 'trashed']);
 
 
         Route::post('subscriptions', [NotificationController::class, 'store']);
         Route::put('subscriptions/{notification}', [NotificationController::class, 'update']);
         Route::patch('subscriptions/{notification}', [NotificationController::class, 'update']);
         Route::delete('subscriptions/{notification}', [NotificationController::class, 'destroy']);
-        Route::post('subscriptions/{id}/restore', [NotificationController::class, 'restore']);
-        Route::get('subscriptions/trashed', [NotificationController::class, 'trashed']);
     });
 });
 

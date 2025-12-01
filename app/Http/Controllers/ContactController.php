@@ -171,46 +171,4 @@ class ContactController extends BaseController
         return $this->sendResponse(null, 'Contact deleted successfully');
     }
 
-    /**
-     * @OA\Post(
-     *     path="/contact/restore/{id}",
-     *     summary="Restore a deleted contact",
-     *     tags={"Contact"},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Contact restored successfully"),
-     *     @OA\Response(response=404, description="Contact not found in trash")
-     * )
-     */
-    public function restore($id)
-    {
-        $data = Contact::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Contact not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Contact restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/contact/trashed",
-     *     summary="List all trashed contacts",
-     *     tags={"Contact"},
-     *     @OA\Response(response=200, description="Trashed contacts retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed contacts found")
-     * )
-     */
-    public function trashed()
-    {
-        $data = Contact::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed contacts found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed contacts retrieved successfully');
-    }
 }

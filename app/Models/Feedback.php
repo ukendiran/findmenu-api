@@ -3,14 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Feedback extends Model
 {
-    use SoftDeletes;
     public $timestamps = false;
     protected $table = 'feedbacks';
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
 
     protected $fillable = [
         'message',
@@ -20,7 +18,6 @@ class Feedback extends Model
     ];
      protected $hidden = [
         'updated_at',
-        'deleted_at',
     ];
 
     public function business()

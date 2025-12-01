@@ -3,14 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
-    use SoftDeletes;
     public $timestamps = false;
     protected $table = 'payments';
-    protected $dates = ['deleted_at', 'created_at'];
+    protected $dates = ['created_at'];
 
     protected $fillable = [
         'businessId',
@@ -26,7 +24,6 @@ class Payment extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     public function business()

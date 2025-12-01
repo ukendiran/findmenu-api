@@ -33,10 +33,10 @@ class FileHelper
      * Get image path or return default no-image path
      * 
      * @param string|null $imagePath
-     * @param string $defaultPath Default: "images/no-image.png"
+     * @param string $defaultPath Default: "images/no-image.jpg"
      * @return string
      */
-    public static function getImagePath($imagePath, $defaultPath = "images/no-image.png")
+    public static function getImagePath($imagePath, $defaultPath = "images/no-image.jpg")
     {
         if (self::imageExists($imagePath)) {
             return $imagePath;
@@ -67,7 +67,7 @@ class FileHelper
      * Get full URL for image or return default no-image URL
      * 
      * @param string|null $imagePath
-     * @param string $defaultPath Default: "images/no-image.png"
+     * @param string $defaultPath Default: "images/no-image.jpg"
      * @return string
      */
     public static function getImageUrl($imagePath, $defaultPath = "images/no-image.png")

@@ -271,51 +271,6 @@ class MainCategoryController extends BaseController
 
     /**
      * @OA\Post(
-     *     path="/main-categories/{id}/restore",
-     *     tags={"Main Category"},
-     *     summary="Restore soft deleted main category",
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Sub category restored successfully"),
-     *     @OA\Response(response=404, description="Not found in trash")
-     * )
-     */
-
-    public function restore($id)
-    {
-        $data = MainCategory::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Sub category not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Sub category restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/main-categories/trashed",
-     *     tags={"Main Category"},
-     *     summary="Get all soft-deleted main categories",
-     *     @OA\Response(response=200, description="Trashed categories retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed categories found")
-     * )
-     */
-
-    public function trashed()
-    {
-        $data = MainCategory::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed categories found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed categories retrieved successfully');
-    }
-
-    /**
-     * @OA\Post(
      *     path="/main-categories/menu-order",
      *     tags={"Main Category"},
      *     summary="Update menu order for main categories",

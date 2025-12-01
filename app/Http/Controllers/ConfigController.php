@@ -219,48 +219,4 @@ class ConfigController extends BaseController
         return $this->sendResponse(null, 'Config deleted successfully');
     }
 
-    /**
-     * @OA\Post(
-     *     path="/config/restore/{id}",
-     *     summary="Restore a deleted config",
-     *     tags={"Config"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Config restored successfully"),
-     *     @OA\Response(response=404, description="Config not found in trash")
-     * )
-     */
-    public function restore($id)
-    {
-        $data = Config::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Config not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Config restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/config/trashed",
-     *     summary="List all trashed configs",
-     *     tags={"Config"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Trashed config retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed config found")
-     * )
-     */
-    public function trashed()
-    {
-        $data = Config::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed config found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed config retrieved successfully');
-    }
 }

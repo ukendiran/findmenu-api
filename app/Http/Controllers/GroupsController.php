@@ -100,7 +100,7 @@ class GroupsController extends BaseController
             ],
             'description' => 'nullable|string',
             'logo'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'bannerImage'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'bannerImage'       => 'nullable|file|image|mimes:jpeg,png,jpg,webp,avif|max:2048',
             'status'      => 'nullable|integer',
         ]);
 
@@ -212,7 +212,7 @@ class GroupsController extends BaseController
             ],
             'description'   => 'nullable|string',
             'logo'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'bannerImage'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'bannerImage'         => 'nullable|file|image|mimes:jpeg,png,jpg,webp,avif|max:2048',
             'status'        => 'nullable|integer',
         ]);
 
@@ -291,48 +291,4 @@ class GroupsController extends BaseController
         return $this->sendResponse(null, 'Groups deleted successfully');
     }
 
-    /**
-     * @OA\Post(
-     *     path="/groups/{id}/restore",
-     *     tags={"Groups"},
-     *     summary="Restore soft deleted group",
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Group restored successfully"),
-     *     @OA\Response(response=404, description="Not found in trash")
-     * )
-     */
-
-    public function restore($id)
-    {
-        $data = Group::onlyTrashed()->find($id);
-
-        if (!$data) {
-            return $this->sendError('Group not found in trash', [], 404);
-        }
-
-        $data->restore();
-
-        return $this->sendResponse($data, 'Group restored successfully');
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/groups/trashed",
-     *     tags={"Groups"},
-     *     summary="Get all soft-deleted main group",
-     *     @OA\Response(response=200, description="Trashed group retrieved successfully"),
-     *     @OA\Response(response=404, description="No trashed group found")
-     * )
-     */
-
-    public function trashed()
-    {
-        $data = Group::onlyTrashed()->get();
-
-        if ($data->isEmpty()) {
-            return $this->sendError('No trashed group found', [], 404);
-        }
-
-        return $this->sendResponse($data, 'Trashed group retrieved successfully');
-    }
 }
