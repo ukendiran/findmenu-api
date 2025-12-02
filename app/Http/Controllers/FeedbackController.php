@@ -17,6 +17,8 @@ class FeedbackController extends BaseController
      *     @OA\Parameter(name="businessId", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="message", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="status", in="query", required=false, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="dateFrom", in="query", required=false, @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="dateTo", in="query", required=false, @OA\Schema(type="string", format="date")),
      *     @OA\Response(response=200, description="Feedback list retrieved successfully"),
      * )
      */
@@ -33,6 +35,14 @@ class FeedbackController extends BaseController
         }
         if ($request->has('status')) {
             $query->where('status', $request->input('status'));
+        }
+
+        // Date range filtering
+        if ($request->has('dateFrom')) {
+            $query->whereDate('created_at', '>=', $request->input('dateFrom'));
+        }
+        if ($request->has('dateTo')) {
+            $query->whereDate('created_at', '<=', $request->input('dateTo'));
         }
 
         $query->orderBy('created_at', 'desc');
