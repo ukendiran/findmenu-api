@@ -31,6 +31,8 @@ class Business extends Model
         'is_featured',
         'license_no',
         'businessType',
+        'business_type_id',
+        'custom_fields',
     ];
     protected $hidden = [
         'created_at',
@@ -41,6 +43,9 @@ class Business extends Model
 
     protected $dates = ['created_at'];
 
+    protected $casts = [
+        'custom_fields' => 'array',
+    ];
 
     public function config()
     {
@@ -56,5 +61,10 @@ class Business extends Model
     public function group()
     {
         return $this->belongsTo(Group::class, 'group_id');
+    }
+
+    public function businessType()
+    {
+        return $this->belongsTo(BusinessType::class, 'business_type_id');
     }
 }

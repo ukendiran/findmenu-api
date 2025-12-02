@@ -16,6 +16,8 @@ use App\Http\Controllers\{
     MenuController,
     NotificationController,
     BusinessController,
+    BusinessTypeController,
+    BusinessTypeFieldController,
     SubCategoryController,
     UserController,
     DashboardController,
@@ -102,6 +104,9 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{user}', [UserController::class, 'show']);
 
+    Route::get('business-types', [BusinessTypeController::class, 'index']);
+    Route::get('business-types/{id}', [BusinessTypeController::class, 'show']);
+    Route::get('business-types/{businessTypeId}/fields', [BusinessTypeFieldController::class, 'index']);
 
     Route::get('subscriptions', [SubscriptionController::class, 'index']);
     Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
@@ -204,6 +209,17 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::patch('admins/{user}', [AdminController::class, 'update']);
         Route::delete('admins/{user}', [AdminController::class, 'destroy']);
 
+        // Business Types routes
+        Route::post('business-types', [BusinessTypeController::class, 'store']);
+        Route::put('business-types/{id}', [BusinessTypeController::class, 'update']);
+        Route::patch('business-types/{id}', [BusinessTypeController::class, 'update']);
+        Route::delete('business-types/{id}', [BusinessTypeController::class, 'destroy']);
+
+        // Business Type Fields routes
+        Route::post('business-types/{businessTypeId}/fields', [BusinessTypeFieldController::class, 'store']);
+        Route::put('business-type-fields/{id}', [BusinessTypeFieldController::class, 'update']);
+        Route::patch('business-type-fields/{id}', [BusinessTypeFieldController::class, 'update']);
+        Route::delete('business-type-fields/{id}', [BusinessTypeFieldController::class, 'destroy']);
 
         Route::post('subscriptions', [NotificationController::class, 'store']);
         Route::put('subscriptions/{notification}', [NotificationController::class, 'update']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Business;
+use App\Models\BusinessType;
 use App\Models\Config;
 use App\Models\Subscription;
 use App\Models\User;
@@ -91,14 +92,28 @@ class BusinessController extends BaseController
             'group_id' => 'nullable|integer',
             'description' => 'nullable|string',
             'currency' => 'nullable|string|max:20',
+            'business_type_id' => 'nullable|integer|exists:business_types,id',
+            'custom_fields' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return $this->sendError('Validation failed', $validator->errors(), 422);
         }
 
+        // Validate custom_fields if business_type_id is provided
+        if ($request->has('business_type_id') && $request->has('custom_fields')) {
+            $validationError = $this->validateCustomFields($request->business_type_id, $request->custom_fields);
+            if ($validationError) {
+                return $validationError;
+            }
+        }
+
         // 1. Create Business
-        $business = Business::create($request->all());
+        $input = $request->all();
+        if ($request->has('custom_fields')) {
+            $input['custom_fields'] = json_encode($request->custom_fields);
+        }
+        $business = Business::create($input);
         $business->refresh();
 
         // 2. Create Config for the Business
@@ -143,7 +158,7 @@ class BusinessController extends BaseController
     public function show($id)
     {
         // $data = Business::find($id);
-        $data = Business::with('group')->find($id);
+        $data = Business::with(['group', 'businessType.fields'])->find($id);
         if (!$data) {
             return $this->sendError('Not Found', 'Business not found', 404);
         }
@@ -185,12 +200,27 @@ class BusinessController extends BaseController
             'type' => 'nullable|string',
             'description' => 'nullable|string',
             'currency' => 'nullable|string|max:20',
+            'business_type_id' => 'nullable|integer|exists:business_types,id',
+            'custom_fields' => 'nullable|array',
         ]);
 
         $input = $request->except('image', 'bannerImage', 'removeLogo', 'removeBanner'); // Get all except images
 
         if ($validator->fails()) {
             return $this->sendError('Validation failed', $validator->errors(), 422);
+        }
+
+        // Validate custom_fields if business_type_id is provided
+        if ($request->has('business_type_id') && $request->has('custom_fields')) {
+            $validationError = $this->validateCustomFields($request->business_type_id, $request->custom_fields);
+            if ($validationError) {
+                return $validationError;
+            }
+        }
+
+        // Handle custom_fields JSON encoding
+        if ($request->has('custom_fields')) {
+            $input['custom_fields'] = json_encode($request->custom_fields);
         }
 
         // Handle logo image removal
@@ -580,5 +610,65 @@ class BusinessController extends BaseController
         }
 
         return $this->sendResponse($businesses, 'Leading businesses retrieved successfully');
+    }
+
+    /**
+     * Validate custom fields against business type field definitions
+     */
+    private function validateCustomFields($businessTypeId, $customFields)
+    {
+        $businessType = BusinessType::with('fields')->find($businessTypeId);
+        
+        if (!$businessType) {
+            return $this->sendError('Validation failed', ['business_type_id' => ['Business type not found']], 422);
+        }
+
+        $errors = [];
+        $fieldDefinitions = $businessType->fields;
+
+        // Check required fields
+        foreach ($fieldDefinitions as $field) {
+            if ($field->is_required && !isset($customFields[$field->field_name])) {
+                $errors[$field->field_name] = ["The {$field->field_label} field is required."];
+            }
+        }
+
+        // Validate field types
+        foreach ($customFields as $fieldName => $value) {
+            $fieldDef = $fieldDefinitions->firstWhere('field_name', $fieldName);
+            
+            if (!$fieldDef) {
+                $errors[$fieldName] = ["Field '{$fieldName}' is not defined for this business type."];
+                continue;
+            }
+
+            // Type validation
+            switch ($fieldDef->field_type) {
+                case 'number':
+                    if (!is_numeric($value) && $value !== null && $value !== '') {
+                        $errors[$fieldName] = ["The {$fieldDef->field_label} must be a number."];
+                    }
+                    break;
+                case 'boolean':
+                    if (!is_bool($value) && $value !== 0 && $value !== 1 && $value !== '0' && $value !== '1' && $value !== null && $value !== '') {
+                        $errors[$fieldName] = ["The {$fieldDef->field_label} must be a boolean."];
+                    }
+                    break;
+                case 'date':
+                    if ($value && !strtotime($value)) {
+                        $errors[$fieldName] = ["The {$fieldDef->field_label} must be a valid date."];
+                    }
+                    break;
+                case 'text':
+                    // Text fields can be any string, no additional validation needed
+                    break;
+            }
+        }
+
+        if (!empty($errors)) {
+            return $this->sendError('Validation failed', $errors, 422);
+        }
+
+        return null;
     }
 }
