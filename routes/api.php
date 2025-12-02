@@ -43,12 +43,12 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
         return response()->json(['message' => 'Email verified successfully']);
-    })->middleware(['signed'])->name('verification.verify');
+    })->middleware(['signed'])->name('email.verification.verify');
 
     Route::post('/email/verification-notification', function (Request $request) {
         $request->user()->sendEmailVerificationNotification();
         return response()->json(['message' => 'Verification link sent']);
-    })->middleware(['auth:api', 'throttle:6,1'])->name('verification.send');
+    })->middleware(['auth:api', 'throttle:6,1'])->name('email.verification.send');
 
     // ------------------------
     // Public GET Routes (No Auth)
@@ -156,6 +156,9 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::patch('contacts/{contact}', [ContactController::class, 'update']);
         Route::delete('contacts/{contact}', [ContactController::class, 'destroy']);
 
+        // Specific routes must come before dynamic routes
+        Route::put('feedbacks/mark-all-read', [FeedbackController::class, 'markAllAsRead']);
+        Route::put('feedbacks/{id}/mark-read', [FeedbackController::class, 'markAsRead']);
         Route::put('feedbacks/{feedback}', [FeedbackController::class, 'update']);
         Route::patch('feedbacks/{feedback}', [FeedbackController::class, 'update']);
         Route::delete('feedbacks/{feedback}', [FeedbackController::class, 'destroy']);
@@ -179,6 +182,9 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::post('sub-categories/menu-order', [SubCategoryController::class, 'updateMenuOrder']);
 
         Route::post('notifications', [NotificationController::class, 'store']);
+        // Specific routes must come before dynamic routes
+        Route::put('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        Route::put('notifications/{id}/mark-read', [NotificationController::class, 'markAsRead']);
         Route::put('notifications/{notification}', [NotificationController::class, 'update']);
         Route::patch('notifications/{notification}', [NotificationController::class, 'update']);
         Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);

@@ -137,4 +137,55 @@ class FeedbackController extends BaseController
         return $this->sendResponse(null, 'Feedback deleted successfully');
     }
 
+    /**
+     * @OA\Put(
+     *     path="/feedbacks/{id}/mark-read",
+     *     summary="Mark feedback as read",
+     *     tags={"Feedback"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Feedback marked as read successfully"),
+     *     @OA\Response(response=404, description="Feedback not found")
+     * )
+     */
+    public function markAsRead($id)
+    {
+        $data = Feedback::find($id);
+
+        if (!$data) {
+            return $this->sendError('Not Found', 'Feedback not found', 404);
+        }
+
+        $data->update(['status' => 2]);
+        return $this->sendResponse($data, 'Feedback marked as read successfully');
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/feedbacks/mark-all-read",
+     *     summary="Mark all feedbacks as read for a business",
+     *     tags={"Feedback"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="businessId", in="query", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="All feedbacks marked as read successfully"),
+     *     @OA\Response(response=422, description="Validation failed")
+     * )
+     */
+    public function markAllAsRead(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'businessId' => 'required|integer|exists:businesses,id',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Validation failed', $validator->errors(), 422);
+        }
+
+        $updated = Feedback::where('businessId', $request->businessId)
+            ->where('status', 1)
+            ->update(['status' => 2]);
+
+        return $this->sendResponse(['updated' => $updated], "Marked {$updated} feedback(s) as read successfully");
+    }
+
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\MainCategory;
+use App\Models\SubCategory;
+use App\Models\Item;
 use App\Helpers\FileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -58,18 +60,14 @@ class MainCategoryController extends BaseController
     {
         $query = MainCategory::query();
 
-        // If user is authenticated, filter by their businessId
-        if (auth('api')->check()) {
+        // Prioritize businessId from request if provided
+        // This allows authenticated users to view categories for different businesses
+        if ($request->has('businessId')) {
+            $query->where('businessId', $request->input('businessId'));
+        } elseif (auth('api')->check()) {
+            // If no businessId in request but user is authenticated, use their businessId
             $user = auth('api')->user();
             $query->where('businessId', $user->businessId);
-        } elseif ($request->has('businessId')) {
-            // For public access, allow filtering by businessId parameter
-            $query->where('businessId', $request->input('businessId'));
-        }
-
-        if ($request->has('businessId')) {
-            // For public access, allow filtering by businessId parameter
-            $query->where('businessId', $request->input('businessId'));
         }
 
         // Optional filters
@@ -266,6 +264,26 @@ class MainCategoryController extends BaseController
 
         if (!$data) {
             return $this->sendError('Not Found', 'Main Category not found', 404);
+        }
+
+        // Check if category has subcategories
+        $subCategoryCount = SubCategory::where('categoryId', $id)->count();
+        if ($subCategoryCount > 0) {
+            return $this->sendError(
+                'Cannot Delete',
+                "Cannot delete this category because it has {$subCategoryCount} subcategory(ies) associated with it. Please delete or reassign the subcategories first.",
+                422
+            );
+        }
+
+        // Check if category has items
+        $itemCount = Item::where('categoryId', $id)->count();
+        if ($itemCount > 0) {
+            return $this->sendError(
+                'Cannot Delete',
+                "Cannot delete this category because it has {$itemCount} item(s) associated with it. Please delete or reassign the items first.",
+                422
+            );
         }
 
         $data->delete();

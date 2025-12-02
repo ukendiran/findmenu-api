@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SubCategory;
+use App\Models\Item;
 use App\Helpers\FileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -346,6 +347,16 @@ class SubCategoryController extends BaseController
 
         if (!$data) {
             return $this->sendError('Not Found', 'Sub Category not found', 404);
+        }
+
+        // Check if subcategory has items
+        $itemCount = Item::where('subCategoryId', $id)->count();
+        if ($itemCount > 0) {
+            return $this->sendError(
+                'Cannot Delete',
+                "Cannot delete this subcategory because it has {$itemCount} item(s) associated with it. Please delete or reassign the items first.",
+                422
+            );
         }
 
         $data->delete();
