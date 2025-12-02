@@ -67,6 +67,11 @@ class MainCategoryController extends BaseController
             $query->where('businessId', $request->input('businessId'));
         }
 
+        if ($request->has('businessId')) {
+            // For public access, allow filtering by businessId parameter
+            $query->where('businessId', $request->input('businessId'));
+        }
+
         // Optional filters
         if ($request->has('name')) {
             $query->where('name', 'like', '%' . $request->input('name') . '%');
@@ -82,11 +87,9 @@ class MainCategoryController extends BaseController
 
         $data = $query->orderBy('menuOrderId')->get();
 
-        if ($data->isEmpty()) {
-            return $this->sendError('No data found', 'No Categories available', 404);
-        }
-
-        return $this->sendResponse($data, 'Categories retrieved successfully');
+        // Return empty array instead of error if no data found
+        // This allows frontend to handle empty states gracefully
+        return $this->sendResponse($data, $data->isEmpty() ? 'No categories found' : 'Categories retrieved successfully');
     }
 
     /**
@@ -419,7 +422,7 @@ class MainCategoryController extends BaseController
             ]);
 
             DB::beginTransaction();
-            
+
             foreach ($updateData as $value) {
                 MainCategory::where('id', $value['id'])->update([
                     'menuOrderId' => $value['menuOrderId'],
@@ -438,7 +441,7 @@ class MainCategoryController extends BaseController
             return $this->sendResponse([], 'Menu order updated successfully');
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             // Log detailed error information
             Log::error("MainCategory menu order update failed", [
                 'user_id' => $user->id,

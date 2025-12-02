@@ -140,11 +140,9 @@ class ItemController extends BaseController
         }
         $data = $query->with(['category', 'subCategory'])->orderBy('menuOrderId')->get();
 
-        if ($data->isEmpty()) {
-            return $this->sendError('No data found', 'No Items available', 404);
-        }
-
-        return $this->sendResponse($data, 'Items retrieved successfully');
+        // Return empty array instead of error if no data found
+        // This allows frontend to handle empty states gracefully
+        return $this->sendResponse($data, $data->isEmpty() ? 'No items found' : 'Items retrieved successfully');
     }
 
     /**

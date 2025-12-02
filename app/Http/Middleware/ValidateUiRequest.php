@@ -43,8 +43,14 @@ class ValidateUiRequest
         // Allow AJAX and JSON requests from frontend apps (additional security layer)
         $isAjax = $request->header('X-Requested-With') === 'XMLHttpRequest';
         $expectsJson = $request->expectsJson();
+        $acceptsJson = $request->header('Accept') && str_contains($request->header('Accept'), 'application/json');
 
-        if (!$isValidRequest && ($isAjax || $expectsJson)) {
+        if (!$isValidRequest && ($isAjax || $expectsJson || $acceptsJson)) {
+            $isValidRequest = true;
+        }
+
+        // Allow GET requests for testing/development (can be restricted in production)
+        if (!$isValidRequest && $request->isMethod('GET')) {
             $isValidRequest = true;
         }
 

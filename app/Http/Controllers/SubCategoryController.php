@@ -132,11 +132,9 @@ class SubCategoryController extends BaseController
         }
         $data = $query->with('category')->orderBy('menuOrderId')->get();
 
-        if ($data->isEmpty()) {
-            return $this->sendError('No data found', 'No Sub categories available', 404);
-        }
-
-        return $this->sendResponse($data, 'Sub categories retrieved successfully');
+        // Return empty array instead of error if no data found
+        // This allows frontend to handle empty states gracefully
+        return $this->sendResponse($data, $data->isEmpty() ? 'No sub categories found' : 'Sub categories retrieved successfully');
     }
 
     /**
