@@ -49,6 +49,7 @@ class AdminAuthController extends BaseController
     {
         $credentials = $request->only('email', 'password');
 
+
         if (! $token = auth('api')->attempt($credentials)) {
             return $this->sendError('Invalid credentials', 'Unauthorized', 401);
         }

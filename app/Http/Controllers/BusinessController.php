@@ -8,6 +8,8 @@ use App\Models\Config;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Helpers\FileHelper;
+use App\Models\BusinessCustomField;
+use App\Models\CustomField;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -47,13 +49,13 @@ class BusinessController extends BaseController
 
         $data = $query->with('group')->get()->map(function ($item) use ($apiUrl) {
             $item->logo_img_url = $item->logo
-                ? $apiUrl  ."/". $item->logo
+                ? $apiUrl  . "/" . $item->logo
                 : 'https://via.placeholder.com/200x200?text=No+Image';
             $item->banner_img_url = $item->bannerImage
-                ? $apiUrl  ."/". $item->bannerImage
+                ? $apiUrl  . "/" . $item->bannerImage
                 : $apiUrl . '/images/no-image.jpg';
             $item->img_url = $item->image
-                ? $apiUrl  . "/".$item->image
+                ? $apiUrl  . "/" . $item->image
                 : $apiUrl . '/images/no-image.jpg';
 
             return $item;
@@ -66,7 +68,7 @@ class BusinessController extends BaseController
         return $this->sendResponse($data, 'Business list retrieved successfully');
     }
 
-   /**
+    /**
      * @OA\Post(
      *     path="/business",
      *     tags={"Business"},
@@ -110,13 +112,34 @@ class BusinessController extends BaseController
 
         // 1. Create Business
         $input = $request->all();
-        if ($request->has('custom_fields')) {
-            $input['custom_fields'] = json_encode($request->custom_fields);
-        }
+        // Remove custom_fields from input for direct DB insert
+        $customFieldsInput = $request->has('custom_fields') ? $request->custom_fields : null;
+        unset($input['custom_fields']);
+
         $business = Business::create($input);
         $business->refresh();
 
-        // 2. Create Config for the Business
+        // 2. Save business-specific custom field values if provided
+        if ($customFieldsInput && $request->has('business_type_id')) {
+            foreach ($customFieldsInput as $fieldName => $value) {
+                $field = \App\Models\CustomField::where('business_type_id', $request->business_type_id)
+                    ->where('field_name', $fieldName)
+                    ->first();
+                if ($field) {
+                    \App\Models\BusinessCustomField::updateOrCreate(
+                        [
+                            'business_id' => $business->id,
+                            'custom_field_id' => $field->id,
+                        ],
+                        [
+                            'value' => $value,
+                        ]
+                    );
+                }
+            }
+        }
+
+        // 3. Create Config for the Business
         $config = Config::create([
             'businessId' => $business->id,
             'json' => json_encode(['example' => 'config']),
@@ -125,7 +148,7 @@ class BusinessController extends BaseController
 
         $config->refresh();
 
-        // 3. Create Admin User for the Business
+        // 4. Create Admin User for the Business
         $user = User::create([
             'name'     => $business->name,
             'email'    => $business->email,
@@ -134,8 +157,19 @@ class BusinessController extends BaseController
             'businessId' => $business->id,
         ]);
 
-        // Refresh to get full record including defaults, timestamps, casts, etc.
         $user->refresh();
+
+        // 5. Reload custom field values for response
+        $business->load(['customFieldsWithValues.customField']);
+        $customFieldsForFrontend = [];
+        if ($business->customFieldsWithValues) {
+            foreach ($business->customFieldsWithValues as $cfv) {
+                if ($cfv->customField) {
+                    $customFieldsForFrontend[$cfv->customField->field_name] = $cfv->value;
+                }
+            }
+        }
+        $business->custom_fields = $customFieldsForFrontend;
 
         return $this->sendResponse([
             'business' => $business,
@@ -218,11 +252,30 @@ class BusinessController extends BaseController
             }
         }
 
-        // Handle custom_fields JSON encoding
+        // Handle custom fields
         if ($request->has('custom_fields')) {
-            $input['custom_fields'] = json_encode($request->custom_fields);
-        }
+            $customFields = json_decode($request->input('custom_fields'), true);
 
+            if (is_array($customFields)) {
+                foreach ($customFields as $fieldName => $value) {
+                    $field = CustomField::where('business_type_id', $data->business_type_id)
+                        ->where('field_name', $fieldName)
+                        ->first();
+
+                    if ($field) {
+                        BusinessCustomField::updateOrCreate(
+                            [
+                                'business_id' => $data->id,
+                                'custom_field_id' => $field->id,
+                            ],
+                            [
+                                'value' => $value,
+                            ]
+                        );
+                    }
+                }
+            }
+        }
         // Handle logo image removal
         if ($request->has('removeLogo') && $request->removeLogo == '1') {
             // Delete old logo image if exists
@@ -276,6 +329,20 @@ class BusinessController extends BaseController
         if (!$data->update($input)) {
             return $this->sendError('Update failed', 'Could not update business', 500);
         }
+
+        // Reload custom field values for response
+        $data->load(['customFieldsWithValues.customField']);
+
+        // Format custom fields for frontend
+        $customFieldsForFrontend = [];
+        if ($data->customFieldsWithValues) {
+            foreach ($data->customFieldsWithValues as $cfv) {
+                if ($cfv->customField) {
+                    $customFieldsForFrontend[$cfv->customField->field_name] = $cfv->value;
+                }
+            }
+        }
+        $data->custom_fields = $customFieldsForFrontend;
 
         return $this->sendResponse($data, 'Business updated successfully');
     }
@@ -412,7 +479,7 @@ class BusinessController extends BaseController
             $business->where('status', $request->input('status'));
         }
 
-         $apiUrl = env('API_URL');
+        $apiUrl = env('API_URL');
 
         $data = $business->first();
 
@@ -421,9 +488,9 @@ class BusinessController extends BaseController
         }
 
         // Add images for business
-        $data->logo_img_url = $data->logo ? $apiUrl ."/". $data->logo : '';
-        $data->banner_img_url = $data->bannerImage ? $apiUrl ."/". $data->bannerImage : $apiUrl . '/images/no-image.jpg';
-        $data->img_url = $data->image ? $apiUrl ."/". $data->image : $apiUrl . '/images/no-image.jpg';
+        $data->logo_img_url = $data->logo ? $apiUrl . "/" . $data->logo : '';
+        $data->banner_img_url = $data->bannerImage ? $apiUrl . "/" . $data->bannerImage : $apiUrl . '/images/no-image.jpg';
+        $data->img_url = $data->image ? $apiUrl . "/" . $data->image : $apiUrl . '/images/no-image.jpg';
 
         /* ------------------------------------------------------------------
         ADD image_url FOR:
@@ -435,21 +502,21 @@ class BusinessController extends BaseController
 
             // Category image
             $cat->image_url = $cat->image
-                ? $apiUrl ."/". $cat->image
+                ? $apiUrl . "/" . $cat->image
                 : $apiUrl . '/images/no-image.jpg';
 
             foreach ($cat->subCategory as $sub) {
 
                 // Subcategory image
                 $sub->image_url = $sub->image
-                    ? $apiUrl ."/". $sub->image
+                    ? $apiUrl . "/" . $sub->image
                     : $apiUrl . '/images/no-image.jpg';
 
                 foreach ($sub->items as $item) {
 
                     // Item image
                     $item->image_url = $item->image
-                        ? $apiUrl ."/". $item->image
+                        ? $apiUrl . "/" . $item->image
                         : $apiUrl . '/images/no-image.jpg';
                 }
             }
@@ -486,13 +553,13 @@ class BusinessController extends BaseController
 
         if ($data) {
             $data->logo_img_url = $data->logo
-                ? $apiUrl ."/". $data->logo
+                ? $apiUrl . "/" . $data->logo
                 : '';
             $data->banner_img_url = $data->bannerImage
-                ? $apiUrl ."/". $data->bannerImage
+                ? $apiUrl . "/" . $data->bannerImage
                 : $apiUrl . '/images/no-image.jpg';
             $data->img_url = $data->image
-                ? $apiUrl ."/". $data->image
+                ? $apiUrl . "/" . $data->image
                 : $apiUrl . '/images/no-image.jpg';
         }
 
@@ -594,13 +661,13 @@ class BusinessController extends BaseController
             ->get()
             ->map(function ($item) use ($apiUrl) {
                 $item->logo_url = $item->logo
-                    ? $apiUrl  ."/". $item->logo
+                    ? $apiUrl  . "/" . $item->logo
                     : null;
                 $item->banner_url = $item->bannerImage
-                    ? $apiUrl  ."/". $item->bannerImage
+                    ? $apiUrl  . "/" . $item->bannerImage
                     : null;
                 $item->image_url = $item->image
-                    ? $apiUrl  . "/".$item->image
+                    ? $apiUrl  . "/" . $item->image
                     : null;
                 return $item;
             });
@@ -618,7 +685,7 @@ class BusinessController extends BaseController
     private function validateCustomFields($businessTypeId, $customFields)
     {
         $businessType = BusinessType::with('fields')->find($businessTypeId);
-        
+
         if (!$businessType) {
             return $this->sendError('Validation failed', ['business_type_id' => ['Business type not found']], 422);
         }
@@ -636,7 +703,7 @@ class BusinessController extends BaseController
         // Validate field types
         foreach ($customFields as $fieldName => $value) {
             $fieldDef = $fieldDefinitions->firstWhere('field_name', $fieldName);
-            
+
             if (!$fieldDef) {
                 $errors[$fieldName] = ["Field '{$fieldName}' is not defined for this business type."];
                 continue;

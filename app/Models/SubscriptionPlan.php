@@ -3,25 +3,38 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SubscriptionPlan extends Model
 {
-    public $timestamps = false;
+    use SoftDeletes;
+    
     protected $table = 'subscription_plans';
-    protected $dates = ['created_at'];
 
     protected $fillable = [
         'name',
         'slug',
         'price',
-        'payment_gateway',
         'billing_period',
         'features',
+        'trial_days',
+        'payment_gateways',
         'status',
-        'created_at',
+        'is_renewable',
+        'description',
     ];
-    protected $hidden = [
-        'created_at',
-        'updated_at',
-    ];    
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'features' => 'array',
+        'payment_gateways' => 'array',
+        'trial_days' => 'integer',
+        'status' => 'integer',
+        'is_renewable' => 'boolean',
+    ];
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'planId');
+    }
 }

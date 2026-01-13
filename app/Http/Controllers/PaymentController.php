@@ -6,48 +6,57 @@ use App\Models\Business;
 use App\Models\SubscriptionPlan;
 use App\Models\Subscription;
 use App\Models\Payment;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class PaymentController extends BaseController
 {
     /**
-     * Initiate PhonePe payment
-     * POST /phonepe/initiate
+     * Initiate payment (gateway selection)
+     * POST /payments/initiate
      */
-    public function initiatePhonePePayment(Request $request)
+    public function initiate(Request $request)
     {
         try {
-            $validated = $request->validate([
+            $validator = Validator::make($request->all(), [
                 'planId' => 'required|exists:subscription_plans,id',
-                'businessId' => 'required|exists:businesses,id'
+                'businessId' => 'required|exists:businesses,id',
+                'gateway' => 'required|in:phonepe,razorpay,stripe',
             ]);
 
-            $plan = SubscriptionPlan::find($validated['planId']);
-            $business = Business::find($validated['businessId']);
-
-            if (!$plan || !$business) {
-                return $this->sendError('Invalid data', 'Plan or business not found', 404);
+            if ($validator->fails()) {
+                return $this->sendError('Validation failed', $validator->errors(), 422);
             }
 
-            // Generate unique transaction ID
-            $transactionId = 'TXN_' . Str::upper(Str::random(12));
-            $amount = $plan->price * 100; // Convert to paise
+            $gateway = $request->input('gateway');
 
-            return $this->sendResponse([
-                'transaction_id' => $transactionId,
-            ], 'Payment initiated successfully');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->sendError('Validation Error', $e->errors(), 422);
+            switch ($gateway) {
+                case 'phonepe':
+                    return $this->initiatePhonePe($request);
+                case 'razorpay':
+                    return $this->initiateRazorpay($request);
+                case 'stripe':
+                    return $this->initiateStripe($request);
+                default:
+                    return $this->sendError('Invalid gateway', 'Payment gateway not supported', 400);
+            }
         } catch (\Exception $e) {
             Log::error('Payment Initiation Error:', ['error' => $e->getMessage()]);
             return $this->sendError('Server Error', $e->getMessage(), 500);
         }
     }
 
-    public function initiatePhonePePayment1(Request $request)
+    /**
+     * Initiate PhonePe payment
+     * POST /payments/phonepe/initiate
+     */
+    public function initiatePhonePe(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -61,9 +70,6 @@ class PaymentController extends BaseController
             if (!$plan || !$business) {
                 return $this->sendError('Invalid data', 'Plan or business not found', 404);
             }
-
-
-
 
             // Generate unique transaction ID
             $transactionId = 'TXN_' . Str::upper(Str::random(12));
@@ -81,10 +87,10 @@ class PaymentController extends BaseController
                 "merchantTransactionId" => $transactionId,
                 "merchantUserId" => "MUID_" . $business->id,
                 "amount" => $amount,
-                "redirectUrl" => url('/api/payment-callback'),
+                "redirectUrl" => url('/api/payments/callback'),
                 "redirectMode" => "REDIRECT",
-                "callbackUrl" => url('/api/payment-callback'),
-                "mobileNumber" => $business->phone,
+                "callbackUrl" => url('/api/payments/callback'),
+                "mobileNumber" => $business->mobile ?? $business->phone,
                 "paymentInstrument" => [
                     "type" => "PAY_PAGE"
                 ]
@@ -107,118 +113,534 @@ class PaymentController extends BaseController
 
             $responseData = $response->json();
 
-            if ($response->successful() && $responseData['success']) {
-                // Create payment record
-                $payment = Payment::create([
-                    'business_id' => $business->id,
-                    'plan_id' => $plan->id,
-                    'amount' => $plan->price,
-                    'transaction_id' => $transactionId,
-                    'merchant_transaction_id' => $transactionId,
-                    'payment_gateway' => 'phonepe',
-                    'status' => 'PENDING',
-                    'payload' => json_encode($payload),
-                    'response' => json_encode($responseData)
-                ]);
+            if ($response->successful() && isset($responseData['success']) && $responseData['success']) {
+                DB::beginTransaction();
+                try {
+                    // Create payment record
+                    $payment = Payment::create([
+                        'businessId' => $business->id,
+                        'planId' => $plan->id,
+                        'amount' => $plan->price,
+                        'currency' => 'INR',
+                        'gateway' => 'phonepe',
+                        'gateway_transaction_id' => $transactionId,
+                        'status' => 'pending',
+                        'metadata' => [
+                            'payload' => $payload,
+                            'response' => $responseData,
+                        ],
+                    ]);
 
-                return $this->sendResponse([
-                    'payment_url' => $responseData['data']['instrumentResponse']['redirectInfo']['url'],
-                    'transaction_id' => $transactionId,
-                    'payment_id' => $payment->id
-                ], 'Payment initiated successfully');
+                    // Create transaction record
+                    Transaction::create([
+                        'businessId' => $business->id,
+                        'paymentId' => $payment->id,
+                        'transaction_type' => 'payment_initiated',
+                        'amount' => $plan->price,
+                        'currency' => 'INR',
+                        'gateway' => 'phonepe',
+                        'status' => 'pending',
+                        'metadata' => [
+                            'transaction_id' => $transactionId,
+                            'plan_id' => $plan->id,
+                            'plan_name' => $plan->name,
+                        ],
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ]);
+
+                    DB::commit();
+
+                    return $this->sendResponse([
+                        'payment_url' => $responseData['data']['instrumentResponse']['redirectInfo']['url'] ?? null,
+                        'transaction_id' => $transactionId,
+                        'payment_id' => $payment->id
+                    ], 'Payment initiated successfully');
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
             } else {
                 Log::error('PhonePe API Error:', $responseData);
                 return $this->sendError('Payment initiation failed', 'Unable to initiate payment with PhonePe', 500);
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->sendError('Validation Error', $e->errors(), 422);
         } catch (\Exception $e) {
-            Log::error('Payment Initiation Error:', ['error' => $e->getMessage()]);
+            Log::error('PhonePe Payment Initiation Error:', ['error' => $e->getMessage()]);
             return $this->sendError('Server Error', $e->getMessage(), 500);
         }
     }
 
     /**
-     * PhonePe payment callback
-     * POST /payment-callback
+     * Initiate Razorpay payment
+     * POST /payments/razorpay/initiate
      */
-    public function paymentCallback(Request $request)
+    public function initiateRazorpay(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'planId' => 'required|exists:subscription_plans,id',
+                'businessId' => 'required|exists:businesses,id'
+            ]);
+
+            $plan = SubscriptionPlan::find($validated['planId']);
+            $business = Business::find($validated['businessId']);
+
+            if (!$plan || !$business) {
+                return $this->sendError('Invalid data', 'Plan or business not found', 404);
+            }
+
+            $keyId = env('RAZORPAY_KEY_ID');
+            $keySecret = env('RAZORPAY_KEY_SECRET');
+
+            if (!$keyId || !$keySecret) {
+                return $this->sendError('Configuration error', 'Razorpay credentials not configured', 500);
+            }
+
+            // Generate unique order ID
+            $orderId = 'ORDER_' . Str::upper(Str::random(12));
+            $amount = $plan->price * 100; // Convert to paise
+
+            // Create order via Razorpay API
+            $response = Http::withBasicAuth($keyId, $keySecret)
+                ->post('https://api.razorpay.com/v1/orders', [
+                    'amount' => $amount,
+                    'currency' => 'INR',
+                    'receipt' => $orderId,
+                    'notes' => [
+                        'business_id' => $business->id,
+                        'plan_id' => $plan->id,
+                        'plan_name' => $plan->name,
+                    ]
+                ]);
+
+            $responseData = $response->json();
+
+            if ($response->successful() && isset($responseData['id'])) {
+                DB::beginTransaction();
+                try {
+                    // Create payment record
+                    $payment = Payment::create([
+                        'businessId' => $business->id,
+                        'planId' => $plan->id,
+                        'amount' => $plan->price,
+                        'currency' => 'INR',
+                        'gateway' => 'razorpay',
+                        'gateway_transaction_id' => $orderId,
+                        'gateway_payment_id' => $responseData['id'],
+                        'status' => 'pending',
+                        'metadata' => [
+                            'order_id' => $orderId,
+                            'razorpay_order_id' => $responseData['id'],
+                            'response' => $responseData,
+                        ],
+                    ]);
+
+                    // Create transaction record
+                    Transaction::create([
+                        'businessId' => $business->id,
+                        'paymentId' => $payment->id,
+                        'transaction_type' => 'payment_initiated',
+                        'amount' => $plan->price,
+                        'currency' => 'INR',
+                        'gateway' => 'razorpay',
+                        'status' => 'pending',
+                        'metadata' => [
+                            'order_id' => $orderId,
+                            'razorpay_order_id' => $responseData['id'],
+                        ],
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ]);
+
+                    DB::commit();
+
+                    return $this->sendResponse([
+                        'order_id' => $responseData['id'],
+                        'amount' => $amount,
+                        'currency' => 'INR',
+                        'key_id' => $keyId,
+                        'payment_id' => $payment->id,
+                    ], 'Razorpay payment initiated successfully');
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
+            } else {
+                Log::error('Razorpay API Error:', $responseData);
+                return $this->sendError('Payment initiation failed', 'Unable to initiate payment with Razorpay', 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Razorpay Payment Initiation Error:', ['error' => $e->getMessage()]);
+            return $this->sendError('Server Error', $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Initiate Stripe payment
+     * POST /payments/stripe/initiate
+     */
+    public function initiateStripe(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'planId' => 'required|exists:subscription_plans,id',
+                'businessId' => 'required|exists:businesses,id'
+            ]);
+
+            $plan = SubscriptionPlan::find($validated['planId']);
+            $business = Business::find($validated['businessId']);
+
+            if (!$plan || !$business) {
+                return $this->sendError('Invalid data', 'Plan or business not found', 404);
+            }
+
+            $secretKey = env('STRIPE_SECRET_KEY');
+
+            if (!$secretKey) {
+                return $this->sendError('Configuration error', 'Stripe credentials not configured', 500);
+            }
+
+            // Generate unique payment intent ID
+            $paymentIntentId = 'PI_' . Str::upper(Str::random(12));
+            $amount = (int)($plan->price * 100); // Convert to cents
+
+            // Create payment intent via Stripe API
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $secretKey,
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ])->asForm()->post('https://api.stripe.com/v1/payment_intents', [
+                'amount' => $amount,
+                'currency' => 'usd',
+                'metadata' => [
+                    'business_id' => $business->id,
+                    'plan_id' => $plan->id,
+                    'plan_name' => $plan->name,
+                ],
+            ]);
+
+            $responseData = $response->json();
+
+            if ($response->successful() && isset($responseData['id'])) {
+                DB::beginTransaction();
+                try {
+                    // Create payment record
+                    $payment = Payment::create([
+                        'businessId' => $business->id,
+                        'planId' => $plan->id,
+                        'amount' => $plan->price,
+                        'currency' => 'USD',
+                        'gateway' => 'stripe',
+                        'gateway_transaction_id' => $paymentIntentId,
+                        'gateway_payment_id' => $responseData['id'],
+                        'status' => 'pending',
+                        'metadata' => [
+                            'payment_intent_id' => $responseData['id'],
+                            'client_secret' => $responseData['client_secret'],
+                            'response' => $responseData,
+                        ],
+                    ]);
+
+                    // Create transaction record
+                    Transaction::create([
+                        'businessId' => $business->id,
+                        'paymentId' => $payment->id,
+                        'transaction_type' => 'payment_initiated',
+                        'amount' => $plan->price,
+                        'currency' => 'USD',
+                        'gateway' => 'stripe',
+                        'status' => 'pending',
+                        'metadata' => [
+                            'payment_intent_id' => $responseData['id'],
+                        ],
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ]);
+
+                    DB::commit();
+
+                    return $this->sendResponse([
+                        'payment_intent_id' => $responseData['id'],
+                        'client_secret' => $responseData['client_secret'],
+                        'amount' => $amount,
+                        'currency' => 'usd',
+                        'payment_id' => $payment->id,
+                    ], 'Stripe payment initiated successfully');
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
+            } else {
+                Log::error('Stripe API Error:', $responseData);
+                return $this->sendError('Payment initiation failed', 'Unable to initiate payment with Stripe', 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Stripe Payment Initiation Error:', ['error' => $e->getMessage()]);
+            return $this->sendError('Server Error', $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Unified payment callback
+     * POST /payments/callback
+     */
+    public function callback(Request $request)
     {
         try {
             $response = $request->all();
             Log::info('Payment Callback:', $response);
 
-            // Verify checksum
-            $checksum = $response['checksum'];
-            $transactionId = $response['transactionId'];
-            $status = $response['code'];
-
-            // Find payment record
-            $payment = Payment::where('transaction_id', $transactionId)->first();
-
-            if (!$payment) {
-                Log::error('Payment not found:', ['transactionId' => $transactionId]);
-                return response()->json(['success' => false, 'message' => 'Payment not found']);
+            // Determine gateway from request
+            $gateway = $this->detectGateway($response);
+            
+            if (!$gateway) {
+                return response()->json(['success' => false, 'message' => 'Unable to detect payment gateway'], 400);
             }
 
-            // Update payment status
-            $payment->update([
-                'status' => $this->mapPhonePeStatus($status),
-                'gateway_response' => json_encode($response),
-                'updated_at' => now()
-            ]);
-
-            // If payment successful, create subscription
-            if ($status === 'PAYMENT_SUCCESS') {
-                $this->createSubscription($payment);
+            switch ($gateway) {
+                case 'phonepe':
+                    return $this->handlePhonePeCallback($request);
+                case 'razorpay':
+                    return $this->handleRazorpayCallback($request);
+                case 'stripe':
+                    return $this->handleStripeCallback($request);
+                default:
+                    return response()->json(['success' => false, 'message' => 'Unsupported gateway'], 400);
             }
-
-            return response()->json(['success' => true]);
         } catch (\Exception $e) {
             Log::error('Payment Callback Error:', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Handle PhonePe callback
+     */
+    private function handlePhonePeCallback(Request $request)
+    {
+        $response = $request->all();
+        $transactionId = $response['transactionId'] ?? $response['merchantTransactionId'] ?? null;
+        $status = $response['code'] ?? $response['status'] ?? null;
+
+        if (!$transactionId) {
+            return response()->json(['success' => false, 'message' => 'Transaction ID not found']);
+        }
+
+        $payment = Payment::where('gateway_transaction_id', $transactionId)
+            ->where('gateway', 'phonepe')
+            ->first();
+
+        if (!$payment) {
+            Log::error('Payment not found:', ['transactionId' => $transactionId]);
+            return response()->json(['success' => false, 'message' => 'Payment not found']);
+        }
+
+        DB::beginTransaction();
+        try {
+            $paymentStatus = $this->mapPhonePeStatus($status);
+            
+            $payment->update([
+                'status' => $paymentStatus,
+                'gateway_payment_id' => $response['transactionId'] ?? null,
+                'metadata' => array_merge($payment->metadata ?? [], [
+                    'callback_response' => $response,
+                    'updated_at' => Carbon::now()->toDateTimeString(),
+                ]),
+            ]);
+
+            // Create transaction record
+            Transaction::create([
+                'businessId' => $payment->businessId,
+                'paymentId' => $payment->id,
+                'transaction_type' => $paymentStatus === 'success' ? 'payment_success' : 'payment_failed',
+                'amount' => $payment->amount,
+                'currency' => $payment->currency,
+                'gateway' => 'phonepe',
+                'status' => $paymentStatus,
+                'metadata' => $response,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            // If payment successful, create/update subscription
+            if ($paymentStatus === 'success') {
+                $this->createOrUpdateSubscription($payment);
+            }
+
+            DB::commit();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('PhonePe Callback Error:', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
-    private function mapPhonePeStatus($phonePeStatus)
+    /**
+     * Handle Razorpay callback
+     */
+    private function handleRazorpayCallback(Request $request)
     {
-        $statusMap = [
-            'PAYMENT_SUCCESS' => 'SUCCESS',
-            'PAYMENT_ERROR' => 'FAILED',
-            'PAYMENT_PENDING' => 'PENDING',
-            'PAYMENT_DECLINED' => 'FAILED'
-        ];
-
-        return $statusMap[$phonePeStatus] ?? 'PENDING';
+        // Razorpay webhook/callback handling
+        // Implementation depends on Razorpay webhook structure
+        return response()->json(['success' => true]);
     }
 
-    private function createSubscription(Payment $payment)
+    /**
+     * Handle Stripe callback
+     */
+    private function handleStripeCallback(Request $request)
+    {
+        // Stripe webhook/callback handling
+        // Implementation depends on Stripe webhook structure
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Detect payment gateway from callback response
+     */
+    private function detectGateway(array $response): ?string
+    {
+        if (isset($response['merchantTransactionId']) || isset($response['transactionId'])) {
+            return 'phonepe';
+        }
+        if (isset($response['razorpay_order_id']) || isset($response['razorpay_payment_id'])) {
+            return 'razorpay';
+        }
+        if (isset($response['payment_intent']) || isset($response['type']) && strpos($response['type'], 'payment_intent') !== false) {
+            return 'stripe';
+        }
+        return null;
+    }
+
+    /**
+     * Map PhonePe status to our status
+     */
+    private function mapPhonePeStatus($phonePeStatus): string
+    {
+        $statusMap = [
+            'PAYMENT_SUCCESS' => 'success',
+            'PAYMENT_ERROR' => 'failed',
+            'PAYMENT_PENDING' => 'pending',
+            'PAYMENT_DECLINED' => 'failed'
+        ];
+
+        return $statusMap[$phonePeStatus] ?? 'pending';
+    }
+
+    /**
+     * Create or update subscription after successful payment
+     */
+    private function createOrUpdateSubscription(Payment $payment)
     {
         try {
-            // Calculate expiry date
-            $plan = SubscriptionPlan::find($payment->plan_id);
-            $expiresAt = now()->addDays($plan->duration_days);
+            $plan = SubscriptionPlan::find($payment->planId);
+            if (!$plan) {
+                Log::error('Plan not found for payment:', ['payment_id' => $payment->id]);
+                return;
+            }
 
-            // Create or update subscription
-            Subscription::updateOrCreate(
-                [
-                    'business_id' => $payment->business_id,
-                    'plan_id' => $payment->plan_id
-                ],
-                [
-                    'status' => 'active',
-                    'expires_at' => $expiresAt,
-                    'payment_id' => $payment->id,
-                    'renewed_at' => now()
-                ]
-            );
+            // Check if business has a trial subscription
+            $existingSubscription = Subscription::where('businessId', $payment->businessId)
+                ->whereIn('status', [1, 4])
+                ->first();
 
-            Log::info('Subscription created/updated for business:', [
-                'business_id' => $payment->business_id,
-                'plan_id' => $payment->plan_id
+            if ($existingSubscription && $existingSubscription->status === 4) {
+                // Convert trial to paid
+                $endsAt = $this->calculateEndDate(Carbon::now(), $plan->billing_period);
+                
+                $existingSubscription->update([
+                    'paymentId' => $payment->id,
+                    'payment_gateway' => $payment->gateway,
+                    'status' => 1, // Active
+                    'ends_at' => $endsAt,
+                    'trial_ends_at' => null,
+                ]);
+
+                // Create transaction for trial conversion
+                Transaction::create([
+                    'businessId' => $payment->businessId,
+                    'subscriptionId' => $existingSubscription->id,
+                    'paymentId' => $payment->id,
+                    'transaction_type' => 'trial_converted',
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'gateway' => $payment->gateway,
+                    'status' => 'success',
+                    'metadata' => [
+                        'converted_at' => Carbon::now()->toDateTimeString(),
+                    ],
+                ]);
+            } else {
+                // Create new subscription
+                $startsAt = Carbon::now();
+                $endsAt = $this->calculateEndDate($startsAt, $plan->billing_period);
+
+                $subscription = Subscription::create([
+                    'businessId' => $payment->businessId,
+                    'planId' => $payment->planId,
+                    'paymentId' => $payment->id,
+                    'payment_gateway' => $payment->gateway,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'trial_ends_at' => null,
+                    'auto_renew' => false,
+                    'status' => 1, // Active
+                ]);
+
+                // Create transaction
+                Transaction::create([
+                    'businessId' => $payment->businessId,
+                    'subscriptionId' => $subscription->id,
+                    'paymentId' => $payment->id,
+                    'transaction_type' => 'subscription_created',
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'gateway' => $payment->gateway,
+                    'status' => 'success',
+                    'metadata' => [
+                        'created_at' => Carbon::now()->toDateTimeString(),
+                    ],
+                ]);
+            }
+
+            Log::info('Subscription created/updated for payment:', [
+                'payment_id' => $payment->id,
+                'business_id' => $payment->businessId,
             ]);
         } catch (\Exception $e) {
             Log::error('Subscription creation error:', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Calculate end date based on billing period
+     */
+    private function calculateEndDate(Carbon $startDate, string $billingPeriod): Carbon
+    {
+        switch ($billingPeriod) {
+            case 'yearly':
+                return $startDate->copy()->addYear();
+            case 'monthly':
+            default:
+                return $startDate->copy()->addMonth();
+        }
+    }
+
+    /**
+     * Get payment history for a business
+     * GET /payments/history/{businessId}
+     */
+    public function getHistory($businessId)
+    {
+        try {
+            $payments = Payment::where('businessId', $businessId)
+                ->with(['plan', 'subscription'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return $this->sendResponse($payments, 'Payment history retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Server Error', $e->getMessage(), 500);
         }
     }
 }

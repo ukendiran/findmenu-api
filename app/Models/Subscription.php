@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Subscription extends Model
 {
-    public $timestamps = false;
+    use SoftDeletes;
+    
     protected $table = 'subscriptions';
-    protected $dates = ['created_at'];
 
     protected $fillable = [
         'businessId',
@@ -17,12 +19,17 @@ class Subscription extends Model
         'payment_gateway',
         'starts_at',
         'ends_at',
+        'trial_ends_at',
+        'auto_renew',
         'status',
-        'created_at',
     ];
-    protected $hidden = [
-        'created_at',
-        'updated_at',
+
+    protected $casts = [
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
+        'trial_ends_at' => 'datetime',
+        'auto_renew' => 'boolean',
+        'status' => 'integer',
     ];
 
     public function business()
@@ -38,5 +45,25 @@ class Subscription extends Model
     public function plan()
     {
         return $this->belongsTo(SubscriptionPlan::class, 'planId');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'subscriptionId');
+    }
+
+    public function isActive()
+    {
+        return $this->status === 1 && Carbon::now()->lte($this->ends_at);
+    }
+
+    public function isTrial()
+    {
+        return $this->status === 4 && $this->trial_ends_at && Carbon::now()->lte($this->trial_ends_at);
+    }
+
+    public function isExpired()
+    {
+        return Carbon::now()->gt($this->ends_at);
     }
 }

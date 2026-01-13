@@ -26,7 +26,8 @@ use App\Http\Controllers\{
     PaymentController,
     PaymentStatusController,
     SubscriptionController,
-    SubscriptionPlanController
+    SubscriptionPlanController,
+    TransactionController
 };
 
 Route::middleware(['validate.ui'])->group(function () {
@@ -108,24 +109,26 @@ Route::middleware(['validate.ui'])->group(function () {
     Route::get('business-types/{id}', [BusinessTypeController::class, 'show']);
     Route::get('business-types/{businessTypeId}/fields', [BusinessTypeFieldController::class, 'index']);
 
+    // Subscription Plans (Public)
+    Route::get('subscription-plans', [SubscriptionPlanController::class, 'index']);
+    Route::get('subscription-plans/{id}', [SubscriptionPlanController::class, 'show']);
+    Route::get('plans-renew', [SubscriptionPlanController::class, 'getRenewalPlans']);
+
+    // Subscriptions (Public GET)
     Route::get('subscriptions', [SubscriptionController::class, 'index']);
-    Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
+    Route::get('subscriptions/current', [SubscriptionController::class, 'getCurrent']);
+    Route::get('subscriptions/{id}', [SubscriptionController::class, 'show']);
 
-    Route::get('plans', [SubscriptionController::class, 'plans']);
-    Route::get('plans-renew', [SubscriptionController::class, 'plansRenew']);
-    Route::get('plans/{plan}', [SubscriptionController::class, 'show']);
+    // Payments (Public GET)
+    Route::get('payments/history/{businessId}', [PaymentController::class, 'getHistory']);
 
-    Route::get('payment-history', [SubscriptionController::class, 'plans']);
-    Route::get('current-plan', [SubscriptionController::class, 'plans']);
-    Route::get('billing-info', [SubscriptionController::class, 'plans']);
+    // Transactions (Public GET)
+    Route::get('transactions', [TransactionController::class, 'index']);
+    Route::get('transactions/{id}', [TransactionController::class, 'show']);
+    Route::get('transactions/summary/{businessId}', [TransactionController::class, 'getSummary']);
 
-
-
-    Route::get('/plans-renew', [SubscriptionPlanController::class, 'getRenewalPlans']);
-    Route::post('/phonepe/initiate', [PaymentController::class, 'initiatePhonePePayment']);
-    Route::post('/payment-callback', [PaymentController::class, 'paymentCallback']);
-    Route::get('/payment-status/{businessId}', [PaymentStatusController::class, 'getPaymentStatus']);
-    Route::get('/payment-history/{businessId}', [PaymentStatusController::class, 'getPaymentHistory']);
+    // Payment callbacks (Public POST - no auth required for webhooks)
+    Route::post('payments/callback', [PaymentController::class, 'callback']);
 
     // ------------------------
     // Private Routes (POST, PUT, DELETE) Require Auth
@@ -221,10 +224,26 @@ Route::middleware(['validate.ui'])->group(function () {
         Route::patch('business-type-fields/{id}', [BusinessTypeFieldController::class, 'update']);
         Route::delete('business-type-fields/{id}', [BusinessTypeFieldController::class, 'destroy']);
 
-        Route::post('subscriptions', [NotificationController::class, 'store']);
-        Route::put('subscriptions/{notification}', [NotificationController::class, 'update']);
-        Route::patch('subscriptions/{notification}', [NotificationController::class, 'update']);
-        Route::delete('subscriptions/{notification}', [NotificationController::class, 'destroy']);
+        // Subscription Plans (Authenticated CRUD)
+        Route::post('subscription-plans', [SubscriptionPlanController::class, 'store']);
+        Route::put('subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
+        Route::patch('subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
+        Route::delete('subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
+
+        // Subscriptions (Authenticated CRUD)
+        Route::post('subscriptions', [SubscriptionController::class, 'store']);
+        Route::put('subscriptions/{id}', [SubscriptionController::class, 'update']);
+        Route::patch('subscriptions/{id}', [SubscriptionController::class, 'update']);
+        Route::delete('subscriptions/{id}', [SubscriptionController::class, 'destroy']);
+        Route::post('subscriptions/{id}/cancel', [SubscriptionController::class, 'cancel']);
+        Route::post('subscriptions/{id}/renew', [SubscriptionController::class, 'renew']);
+        Route::post('subscriptions/{id}/convert-trial', [SubscriptionController::class, 'convertTrial']);
+
+        // Payments (Authenticated)
+        Route::post('payments/initiate', [PaymentController::class, 'initiate']);
+        Route::post('payments/phonepe/initiate', [PaymentController::class, 'initiatePhonePe']);
+        Route::post('payments/razorpay/initiate', [PaymentController::class, 'initiateRazorpay']);
+        Route::post('payments/stripe/initiate', [PaymentController::class, 'initiateStripe']);
     });
 });
 

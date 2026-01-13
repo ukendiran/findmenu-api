@@ -5,6 +5,7 @@ on:
     branches:
       - test # test
       - main # production
+      - new-deploy # production
 
 jobs:
   deploy-test:
@@ -50,7 +51,7 @@ jobs:
 
 
   deploy-production:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/new-deploy'
     runs-on: ubuntu-latest
     name: Deploy to Production Server
     steps:

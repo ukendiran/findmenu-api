@@ -4,23 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Payment extends Model
+class Transaction extends Model
 {
-    protected $table = 'payments';
+    protected $table = 'transactions';
 
     protected $fillable = [
         'businessId',
         'subscriptionId',
-        'planId',
+        'paymentId',
+        'transaction_type',
         'amount',
         'currency',
         'gateway',
-        'gateway_transaction_id',
-        'gateway_payment_id',
-        'payment_method',
         'status',
-        'receipt_url',
         'metadata',
+        'ip_address',
+        'user_agent',
     ];
 
     protected $casts = [
@@ -38,13 +37,8 @@ class Payment extends Model
         return $this->belongsTo(Subscription::class, 'subscriptionId');
     }
 
-    public function plan()
+    public function payment()
     {
-        return $this->belongsTo(SubscriptionPlan::class, 'planId');
-    }
-
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class, 'paymentId');
+        return $this->belongsTo(Payment::class, 'paymentId');
     }
 }

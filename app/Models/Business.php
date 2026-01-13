@@ -67,4 +67,9 @@ class Business extends Model
     {
         return $this->belongsTo(BusinessType::class, 'business_type_id');
     }
+
+    public function customFieldsWithValues()
+    {
+        return $this->hasMany(BusinessCustomField::class);
+    }
 }
